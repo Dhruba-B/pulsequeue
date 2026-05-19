@@ -1,0 +1,19 @@
+{
+  "name": "pulsequeue",
+  "version": "1.0.0",
+  "description": "A distributed job processing system",
+  "main": "index.js",
+  "scripts": {},
+  "author": "Dhrubashis Basak",
+  "license": "ISC",
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^9.0.1",
+    "axios": "^1.16.1",
+    "dotenv": "^17.4.2",
+    "ioredis": "^5.10.1",
+    "recharts": "^3.8.1",
+    "socket.io-client": "^4.8.3"
+  }
+}

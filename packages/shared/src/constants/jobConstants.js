@@ -1,0 +1,20 @@
+export const JOB_STATUS = {
+    WAITING: "WAITING",
+    ACTIVE: "ACTIVE",
+    COMPLETED: "COMPLETED",
+    FAILED: "FAILED",
+    DELAYED: "DELAYED"
+};
+
+export const JOB_PRIORITY = {
+    HIGH: "HIGH",
+    MEDIUM: "MEDIUM",
+    LOW: "LOW"
+};
+
+export const JOB_TYPES = {
+    EMAIL: "EMAIL",
+    IMAGE_PROCESS: "IMAGE_PROCESS",
+    REPORT_GENERATION: "REPORT_GENERATION",
+    CSV_IMPORT: "CSV_IMPORT"
+};
