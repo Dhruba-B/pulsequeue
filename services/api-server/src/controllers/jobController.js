@@ -3,6 +3,7 @@ import { createJobObject }
 
 import { addJobToQueue }
     from "../../../../packages/queue-core/src/queueService.js";
+import { emitJobCreated } from "../services/socketEvents.js";
 
 export const createJob = async (req, res) => {
 
@@ -11,6 +12,8 @@ export const createJob = async (req, res) => {
         const job = createJobObject(req.body);
 
         await addJobToQueue(job);
+
+        emitJobCreated(job);
 
         return res.status(201).json({
             success: true,

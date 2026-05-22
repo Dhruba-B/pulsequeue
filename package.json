@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A distributed job processing system",
   "main": "index.js",
+  "type": "module",
   "scripts": {},
   "author": "Dhrubashis Basak",
   "license": "ISC",
@@ -13,6 +14,8 @@
     "axios": "^1.16.1",
     "dotenv": "^17.4.2",
     "ioredis": "^5.10.1",
+    "lucide-react": "^1.16.0",
+    "react-router-dom": "^7.15.1",
     "recharts": "^3.8.1",
     "socket.io-client": "^4.8.3"
   }

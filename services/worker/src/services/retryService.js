@@ -1,12 +1,14 @@
 import redis
-from "../../../../packages/redis-client/src/index.js";
+    from "../../../../packages/redis-client/src/index.js";
 
 import { REDIS_KEYS }
-from "../../../../packages/shared/src/constants/redisKeys.js";
+    from "../../../../packages/shared/src/constants/redisKeys.js";
 
 import {
     JOB_STATUS
 } from "../../../../packages/shared/src/constants/jobConstants.js";
+import { publishEvent } from "./eventPublisher.js";
+import { EVENT_CHANNELS } from "../../../../packages/shared/src/constants/eventChannels.js";
 
 const BASE_DELAY = 2000;
 
@@ -33,6 +35,17 @@ export const retryJob = async (job, error) => {
             REDIS_KEYS.FAILED,
             job.id
         );
+
+        await publishEvent(
+            EVENT_CHANNELS.JOB_FAILED,
+            {
+                jobId: job.id,
+                error: error.message,
+                workerId: job.workerId,
+                timestamp: Date.now(),
+            },
+        );
+
 
         console.log(
             `Job permanently failed: ${job.id}`
