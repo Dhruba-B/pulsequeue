@@ -33,22 +33,4 @@ export const NAV_ITEMS = [
         icon: SlidersHorizontal,
         path: "/worker-control"
     },
-
-    {
-        label: "Failed Jobs",
-        icon: AlertTriangle,
-        path: "/failed"
-    },
-
-    {
-        label: "Metrics",
-        icon: BarChart3,
-        path: "/metrics"
-    },
-
-    {
-        label: "Settings",
-        icon: Settings,
-        path: "/settings"
-    }
 ];
