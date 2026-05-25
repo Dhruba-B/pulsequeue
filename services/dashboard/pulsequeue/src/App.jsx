@@ -16,6 +16,9 @@ from "./pages/JobsPage";
 import WorkersPage
 from "./pages/WorkersPage";
 
+import WorkerControlPage
+from "./pages/WorkerControlPage";
+
 export default function App() {
 
   return (
@@ -39,6 +42,11 @@ export default function App() {
                   <Route
                       path="/workers"
                       element={<WorkersPage />}
+                  />
+
+                  <Route
+                      path="/worker-control"
+                      element={<WorkerControlPage />}
                   />
 
               </Routes>

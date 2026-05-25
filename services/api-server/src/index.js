@@ -2,7 +2,9 @@ import express from "express";
 import cors from "cors";
 import jobRoutes from "./routes/jobRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
+import workerRoutes from "./routes/workerRoutes.js";
 import { startEventSubscriber } from "./services/eventSubscriber.js";
+import { hydrateManagedWorkers } from "./services/workerManager.js";
 
 import { Server } from "socket.io";
 import http from "http";
@@ -15,6 +17,7 @@ app.use(express.json());
 
 app.use("/jobs", jobRoutes);
 app.use("/dashboard", dashboardRoutes);
+app.use("/workers", workerRoutes);
 
 const server = http.createServer(app);
 
@@ -33,6 +36,8 @@ io.on("connection", (socket) => {
 });
 
 const PORT = 5000;
+
+await hydrateManagedWorkers();
 
 startEventSubscriber();
 

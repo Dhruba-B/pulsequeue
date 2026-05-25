@@ -9,6 +9,10 @@ export const startEventSubscriber = async () => {
         EVENT_CHANNELS.JOB_COMPLETED,
 
         EVENT_CHANNELS.JOB_FAILED,
+
+        EVENT_CHANNELS.WORKER_UPDATED,
+
+        EVENT_CHANNELS.WORKER_LIFECYCLE,
     );
 
     console.log("Subscribed to events");
@@ -17,7 +21,7 @@ export const startEventSubscriber = async () => {
         const payload = JSON.parse(message);
 
         console.log("Event Received:", channel);
-        debugger
+
         switch (channel) {
             case EVENT_CHANNELS.JOB_COMPLETED:
                 io.emit("job_completed", payload);
@@ -26,6 +30,29 @@ export const startEventSubscriber = async () => {
 
             case EVENT_CHANNELS.JOB_FAILED:
                 io.emit("job_failed", payload);
+
+                break;
+
+            case EVENT_CHANNELS.WORKER_UPDATED:
+                io.emit("worker_updated", payload);
+
+                break;
+
+            case EVENT_CHANNELS.WORKER_LIFECYCLE:
+                io.emit("worker_lifecycle", payload);
+
+                io.emit(
+                    "worker_updated",
+                    {
+                        ...payload,
+                        status:
+                            payload.status === "ONLINE"
+                            ||
+                            payload.status === "STARTED"
+                                ? "RUNNING"
+                                : payload.status,
+                    }
+                );
 
                 break;
         }

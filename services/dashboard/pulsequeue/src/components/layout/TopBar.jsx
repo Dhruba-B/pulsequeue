@@ -8,26 +8,28 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 
+const livePulse = keyframes`
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+`;
+
+const Clock = () => {
+    const [time, setTime] = useState(new Date());
+
+    useEffect(() => {
+        const id = setInterval(() => setTime(new Date()), 1000);
+
+        return () => clearInterval(id);
+    }, []);
+
+    return (
+        <Typography sx={{ fontSize: "13px", color: "rgba(255,255,255,0.35)", letterSpacing: "1px" }}>
+            {time.toLocaleTimeString("en-US", { hour12: false })}
+        </Typography>
+    );
+};
+
 export default function Topbar() {
-
-    // ─── Live clock ───────────────────────────────────────────────────────────────
-    const Clock = () => {
-        const [t, setT] = useState(new Date());
-        useEffect(() => {
-            const id = setInterval(() => setT(new Date()), 1000);
-            return () => clearInterval(id);
-        }, []);
-        return (
-            <Typography sx={{ fontSize: "13px", color: "rgba(255,255,255,0.35)", letterSpacing: "1px" }}>
-                {t.toLocaleTimeString("en-US", { hour12: false })}
-            </Typography>
-        );
-    };
-
-    const livePulse = keyframes`
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50%       { opacity: 0.5; transform: scale(0.85); }
-    `;
 
     return (
 
@@ -37,10 +39,15 @@ export default function Topbar() {
 
             sx={{
 
-                width:
-                    "calc(100% - 260px)",
+                width: {
+                    xs: "100%",
+                    md: "calc(100% - 260px)"
+                },
 
-                ml: "260px",
+                ml: {
+                    xs: 0,
+                    md: "260px"
+                },
 
                 background:
                     "rgba(8,11,16,0.75)",
@@ -62,7 +69,6 @@ export default function Topbar() {
                     Distributed Queue Monitoring
                 </Typography>
 
-                {/* Right: live badge + clock */}
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2.5 }}>
                     <Chip
                         size="small"

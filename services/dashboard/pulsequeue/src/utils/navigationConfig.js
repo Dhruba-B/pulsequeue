@@ -2,6 +2,7 @@ import {
     LayoutDashboard,
     ListTodo,
     Cpu,
+    SlidersHorizontal,
     AlertTriangle,
     BarChart3,
     Settings
@@ -25,6 +26,12 @@ export const NAV_ITEMS = [
         label: "Workers",
         icon: Cpu,
         path: "/workers"
+    },
+
+    {
+        label: "Worker Control",
+        icon: SlidersHorizontal,
+        path: "/worker-control"
     },
 
     {

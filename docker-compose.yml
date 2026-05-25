@@ -1,14 +1,40 @@
 version: "3.9"
 
 services:
+
   redis:
-    image: redis:7
+    image: redis:7-alpine
+
     ports:
       - "6379:6379"
 
-  redis-commander:
-    image: rediscommander/redis-commander
+  api-server:
+    build: ./services/api-server
+
     ports:
-      - "8081:8081"
-    environment:
-      - REDIS_HOSTS=local:redis:6379
+      - "5000:5000"
+
+    depends_on:
+      - redis
+
+  worker:
+    build: ./services/worker
+
+    depends_on:
+      - redis
+      - api-server
+
+  scheduler:
+    build: ./services/scheduler
+
+    depends_on:
+      - redis
+
+  dashboard:
+    build: ./services/dashboard
+
+    ports:
+      - "4173:4173"
+
+    depends_on:
+      - api-server

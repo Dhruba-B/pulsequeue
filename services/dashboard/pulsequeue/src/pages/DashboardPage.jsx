@@ -1,14 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import {
-    AppBar,
     Box,
-    Chip,
     CircularProgress,
     Divider,
     GlobalStyles,
     Grid,
     Paper,
-    Toolbar,
     Tooltip,
     Typography,
     createTheme,
@@ -114,7 +111,7 @@ const useCountUp = (target, duration = 600) => {
             if (step >= steps) { clearInterval(id); prev.current = target; }
         }, duration / steps);
         return () => clearInterval(id);
-    }, [target]);
+    }, [target, duration]);
     return display;
 };
 
@@ -126,7 +123,11 @@ const StatCard = ({ statKey, value, index }) => {
     const isAlert = statKey === "failed" && value > 0;
 
     useEffect(() => {
-        setHistory(h => [...h.slice(1), value]);
+        const id = setTimeout(() => {
+            setHistory(h => [...h.slice(1), value]);
+        }, 0);
+
+        return () => clearTimeout(id);
     }, [value]);
 
     return (
@@ -394,7 +395,7 @@ export default function DashboardPage() {
     };
 
     useEffect(() => {
-        loadStats();
+        fetchStats().then(setStats);
         const interval = setInterval(loadStats, 3000);
         return () => clearInterval(interval);
     }, []);

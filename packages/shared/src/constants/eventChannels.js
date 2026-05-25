@@ -6,5 +6,7 @@ export const EVENT_CHANNELS = {
     JOB_FAILED: "events:job:failed",
   
     WORKER_UPDATED: "events:worker:updated",
+
+    WORKER_LIFECYCLE: "events:worker:lifecycle",
   };
   

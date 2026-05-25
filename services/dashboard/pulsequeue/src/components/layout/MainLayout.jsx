@@ -27,9 +27,15 @@ export default function MainLayout({
             <Box
                 sx={{
 
-                    ml: "280px",
+                    ml: {
+                        xs: 0,
+                        md: "280px"
+                    },
                     pt: "100px",
-                    px: 4,
+                    px: {
+                        xs: 2,
+                        md: 4
+                    },
                     pb: 5
                 }}
             >

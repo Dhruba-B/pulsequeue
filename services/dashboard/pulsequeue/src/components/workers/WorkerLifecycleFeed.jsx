@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Paper, Typography, Stack, Box, alpha } from "@mui/material";
+import { Box, Paper, Stack, Typography, alpha } from "@mui/material";
 import { keyframes } from "@emotion/react";
 
 const MONO = "'Space Mono', monospace";
@@ -15,26 +15,26 @@ const liveBlink = keyframes`
   50%       { opacity: 0.3; }
 `;
 
-// ─── Event type config ────────────────────────────────────────────────────────
-const EVENT_CONFIG = {
-    JOB_COMPLETED: { color: "#00E5A0", bgColor: "rgba(0,229,160,0.08)", borderColor: "rgba(0,229,160,0.2)", label: "Completed" },
-    JOB_FAILED: { color: "#FF4D6A", bgColor: "rgba(255,77,106,0.08)", borderColor: "rgba(255,77,106,0.2)", label: "Failed" },
-    JOB_STARTED: { color: "#00C8FF", bgColor: "rgba(0,200,255,0.08)", borderColor: "rgba(0,200,255,0.2)", label: "Started" },
-    JOB_DELAYED: { color: "#7B8CDE", bgColor: "rgba(123,140,222,0.08)", borderColor: "rgba(123,140,222,0.2)", label: "Delayed" },
-    WORKER_ONLINE: { color: "#00E5A0", bgColor: "rgba(0,229,160,0.08)", borderColor: "rgba(0,229,160,0.2)", label: "Worker Up" },
-    WORKER_OFFLINE: { color: "#FF4D6A", bgColor: "rgba(255,77,106,0.08)", borderColor: "rgba(255,77,106,0.2)", label: "Worker Dn" },
+// ─── Status config ────────────────────────────────────────────────────────────
+const STATUS_CONFIG = {
+    STARTED: { color: "#00E5A0", bgColor: "rgba(0,229,160,0.08)", borderColor: "rgba(0,229,160,0.2)", label: "Started" },
+    ONLINE: { color: "#00E5A0", bgColor: "rgba(0,229,160,0.08)", borderColor: "rgba(0,229,160,0.2)", label: "Online" },
+    STOPPING: { color: "#FFB800", bgColor: "rgba(255,184,0,0.08)", borderColor: "rgba(255,184,0,0.2)", label: "Stopping" },
+    STOPPED: { color: "rgba(255,255,255,0.45)", bgColor: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)", label: "Stopped" },
+    EXITED: { color: "#FF4D6A", bgColor: "rgba(255,77,106,0.08)", borderColor: "rgba(255,77,106,0.2)", label: "Exited" },
+    ERROR: { color: "#FF4D6A", bgColor: "rgba(255,77,106,0.08)", borderColor: "rgba(255,77,106,0.2)", label: "Error" },
 };
 
-const FILTERS = ["All", "Jobs", "Workers", "Errors"];
+const FILTERS = ["All", "Active", "Stopped", "Errors"];
 
-const getConfig = (type) =>
-    EVENT_CONFIG[type] || { color: "#FFB800", bgColor: "rgba(255,184,0,0.08)", borderColor: "rgba(255,184,0,0.2)", label: type };
+const getConfig = (status) =>
+    STATUS_CONFIG[status] || { color: "#00C8FF", bgColor: "rgba(0,200,255,0.08)", borderColor: "rgba(0,200,255,0.2)", label: status };
 
 const matchesFilter = (event, filter) => {
     if (filter === "All") return true;
-    if (filter === "Jobs") return event.type.startsWith("JOB_");
-    if (filter === "Workers") return event.type.startsWith("WORKER_");
-    if (filter === "Errors") return event.type === "JOB_FAILED";
+    if (filter === "Active") return ["STARTED", "ONLINE"].includes(event.status);
+    if (filter === "Stopped") return ["STOPPING", "STOPPED"].includes(event.status);
+    if (filter === "Errors") return ["EXITED", "ERROR"].includes(event.status);
     return true;
 };
 
@@ -46,8 +46,8 @@ const fmtRelative = (ts) => {
 };
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
-const StatusBadge = ({ type }) => {
-    const { color, bgColor, borderColor, label } = getConfig(type);
+const StatusBadge = ({ status }) => {
+    const { color, bgColor, borderColor, label } = getConfig(status);
     return (
         <Box sx={{
             display: "inline-flex",
@@ -88,44 +88,34 @@ const EventRow = ({ event, isNew }) => {
     const time = event.timestamp ? fmtRelative(event.timestamp) : "—";
 
     return (
-        <Box
-            sx={{
-                display: "grid",
-                gridTemplateColumns: "100px 1fr 90px 68px",
-                alignItems: "center",
-                gap: "8px",
-                px: "16px",
-                py: "9px",
-                borderBottom: "1px solid rgba(255,255,255,0.04)",
-                animation: isNew ? `${slideIn} 0.3s ease both` : "none",
-                transition: "background 0.12s",
-                "&:last-child": { borderBottom: "none" },
-                "&:hover": { background: "rgba(255,255,255,0.025)" },
-            }}
-        >
+        <Box sx={{
+            display: "grid",
+            gridTemplateColumns: "100px 1fr 68px",
+            alignItems: "center",
+            gap: "8px",
+            px: "16px",
+            py: "9px",
+            borderBottom: "1px solid rgba(255,255,255,0.04)",
+            animation: isNew ? `${slideIn} 0.3s ease both` : "none",
+            transition: "background 0.12s",
+            "&:last-child": { borderBottom: "none" },
+            "&:hover": { background: "rgba(255,255,255,0.025)" },
+        }}>
             {/* Status */}
-            <Box sx={{ display: "flex", alignItems: "center" }}><StatusBadge type={event.type} /></Box>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+                <StatusBadge status={event.status} />
+            </Box>
 
-            {/* Message */}
-            <Typography sx={{
+            {/* Worker ID */}
+            <Typography noWrap sx={{
                 fontFamily: MONO,
                 fontSize: "11px",
                 color: "rgba(255,255,255,0.45)",
                 lineHeight: 1.4,
             }}
-                title={event.message}
+                title={event.workerId}
             >
-                {event.message}
-            </Typography>
-
-            {/* Worker / source */}
-            <Typography noWrap sx={{
-                fontFamily: MONO,
-                fontSize: "10px",
-                color: "rgba(255,255,255,0.22)",
-                letterSpacing: "0.3px",
-            }}>
-                {event.worker || "—"}
+                {event.workerId}
             </Typography>
 
             {/* Time */}
@@ -189,17 +179,16 @@ const ColHeader = ({ children, align = "left" }) => (
 );
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function ActivityFeed({ events = [] }) {
+export default function WorkerLifecycleFeed({ events = [] }) {
     const [filter, setFilter] = useState("All");
     const [, setTick] = useState(0);
 
-    // Refresh relative timestamps every 15s
     useEffect(() => {
-        const id = setInterval(() => setTick(t => t + 1), 15000);
+        const id = setInterval(() => setTick((t) => t + 1), 15000);
         return () => clearInterval(id);
     }, []);
 
-    const filtered = events.filter(e => matchesFilter(e, filter));
+    const filtered = events.filter((e) => matchesFilter(e, filter));
 
     return (
         <Paper
@@ -212,7 +201,8 @@ export default function ActivityFeed({ events = [] }) {
                 overflow: "hidden",
                 display: "flex",
                 flexDirection: "column",
-                height: "60%",
+                height: "100%",
+                minHeight: 360,
             }}
         >
             {/* ── Header ── */}
@@ -234,7 +224,7 @@ export default function ActivityFeed({ events = [] }) {
                     lineHeight: 1,
                     letterSpacing: "-0.2px",
                 }}>
-                    Activity
+                    Lifecycle Stream
                 </Typography>
 
                 {/* Live pill */}
@@ -268,18 +258,16 @@ export default function ActivityFeed({ events = [] }) {
             {/* ── Column headers ── */}
             <Box sx={{
                 display: "grid",
-                gridTemplateColumns: "100px 1fr 90px 68px",
+                gridTemplateColumns: "100px 1fr 68px",
                 gap: "8px",
                 px: "16px",
                 py: "7px",
                 borderBottom: "1px solid rgba(255,255,255,0.05)",
                 background: "rgba(0,0,0,0.08)",
                 flexShrink: 0,
-                textAlign: "center",
             }}>
                 <ColHeader>Status</ColHeader>
-                <ColHeader align="center">Message</ColHeader>
-                <ColHeader>Source</ColHeader>
+                <ColHeader>Worker</ColHeader>
                 <ColHeader align="right">Time</ColHeader>
             </Box>
 
@@ -308,7 +296,11 @@ export default function ActivityFeed({ events = [] }) {
                     </Box>
                 ) : (
                     filtered.map((event, i) => (
-                        <EventRow key={i} event={event} isNew={i === 0 && filter === "All"} />
+                        <EventRow
+                            key={`${event.workerId}-${event.timestamp}-${i}`}
+                            event={event}
+                            isNew={i === 0 && filter === "All"}
+                        />
                     ))
                 )}
             </Box>
@@ -334,7 +326,7 @@ export default function ActivityFeed({ events = [] }) {
                 </Typography>
 
                 <Stack direction="row" spacing={0.5}>
-                    {FILTERS.map(f => (
+                    {FILTERS.map((f) => (
                         <FilterBtn
                             key={f}
                             label={f}

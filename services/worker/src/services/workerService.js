@@ -15,11 +15,28 @@ import { publishEvent } from "./eventPublisher.js";
 
 import { EVENT_CHANNELS } from "../../../../packages/shared/src/constants/eventChannels.js";
 
+import { sleep } from "../utils/sleep.js";
+
+let isRunning = true;
+
+let activeJobs = 0;
+
+export const requestWorkerStop = () => {
+    isRunning = false;
+};
+
+export const waitForWorkerDrain = async () => {
+
+    while (activeJobs > 0) {
+
+        await sleep(250);
+    }
+};
 
 export const startWorker = async () => {
     console.log("Worker Started");
 
-    while (true) {
+    while (isRunning) {
         let job = null;
 
         try {
@@ -27,18 +44,22 @@ export const startWorker = async () => {
 
             // No jobs available
             if (!jobId) {
-                await new Promise((resolve) => setTimeout(resolve, 1000));
+                await sleep(1000);
 
                 continue;
             }
 
             console.log("Picked Job:", jobId);
 
+            activeJobs += 1;
+
             // Fetch job data
             const jobData = await redis.hget(REDIS_KEYS.JOB_DATA, jobId);
 
             if (!jobData) {
                 console.log("Job data missing");
+
+                activeJobs -= 1;
 
                 continue;
             }
@@ -100,6 +121,12 @@ export const startWorker = async () => {
 
             if (job) {
                 await retryJob(job, error);
+            }
+        } finally {
+
+            if (activeJobs > 0) {
+
+                activeJobs -= 1;
             }
         }
     }

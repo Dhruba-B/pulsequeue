@@ -43,6 +43,11 @@ export default function Sidebar() {
                     "blur(14px)",
 
                 zIndex: 1200
+                ,
+                display: {
+                    xs: "none",
+                    md: "block"
+                }
             }}
         >
 

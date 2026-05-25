@@ -9,7 +9,13 @@ import { WORKER_ID }
 
 export const startHeartbeat = async () => {
 
-    setInterval(async () => {
+    await redis.hset(
+        REDIS_KEYS.WORKER_HEARTBEATS,
+        WORKER_ID,
+        Date.now()
+    );
+
+    const interval = setInterval(async () => {
 
         try {
 
@@ -28,4 +34,19 @@ export const startHeartbeat = async () => {
         }
 
     }, 5000);
+
+    return interval;
+};
+
+export const stopHeartbeat = async (interval) => {
+
+    if (interval) {
+
+        clearInterval(interval);
+    }
+
+    await redis.hdel(
+        REDIS_KEYS.WORKER_HEARTBEATS,
+        WORKER_ID
+    );
 };

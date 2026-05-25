@@ -22,5 +22,9 @@ export const REDIS_KEYS = {
 
     WORKER_HEARTBEATS: "workers:heartbeats",
 
-    WORKER_JOBS: "workers:jobs"
+    WORKER_JOBS: "workers:jobs",
+
+    MANAGED_WORKERS: "workers:managed",
+
+    WORKER_LIFECYCLE_EVENTS: "workers:lifecycle:events"
 };

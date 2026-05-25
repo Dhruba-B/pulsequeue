@@ -34,10 +34,56 @@ export const fetchJobs = async ({
     return res.data;
 };
 
+export const createJob = async (job) => {
+
+    const res =
+        await API.post(
+            "/jobs",
+            job
+        );
+
+    return res.data.data;
+};
+
 export const fetchWorkers = async () => {
 
     const res =
         await API.get("/dashboard/workers");
+
+    return res.data.data;
+};
+
+export const fetchWorkerControls = async () => {
+
+    const res =
+        await API.get("/workers");
+
+    return res.data.data;
+};
+
+export const startWorker = async (count = 1) => {
+
+    const res =
+        await API.post(
+            "/workers/start",
+            { count }
+        );
+
+    return res.data.data;
+};
+
+export const stopWorker = async (workerId) => {
+
+    const res =
+        await API.post(`/workers/${workerId}/stop`);
+
+    return res.data.data;
+};
+
+export const stopWorkers = async () => {
+
+    const res =
+        await API.post("/workers/stop");
 
     return res.data.data;
 };

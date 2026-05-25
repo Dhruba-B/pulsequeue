@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { Box, Grid, Typography, Stack } from "@mui/material";
+import { Box, Grid, Typography } from "@mui/material";
 
 import { fetchWorkers } from "../api/dashboardApi";
 
@@ -16,7 +16,7 @@ export default function WorkersPage() {
     };
 
     useEffect(() => {
-        loadWorkers();
+        fetchWorkers().then(setWorkers);
 
         const interval = setInterval(loadWorkers, 3000);
 

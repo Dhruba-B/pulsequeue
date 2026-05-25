@@ -166,13 +166,17 @@ export const getWorkers = async (req, res) => {
 
         const workerJobs = await redis.hgetall(REDIS_KEYS.WORKER_JOBS);
 
+        const managedWorkers = await redis.hgetall(REDIS_KEYS.MANAGED_WORKERS);
+
         const now = Date.now();
 
-        const parsedWorkers = Object.entries(workers).map(
+        const parsedWorkersById = new Map();
+
+        Object.entries(workers).forEach(
             ([workerId, lastSeen]) => {
                 const isAlive = now - Number(lastSeen) < 15000;
 
-                return {
+                parsedWorkersById.set(workerId, {
                     workerId,
 
                     lastSeen,
@@ -186,9 +190,33 @@ export const getWorkers = async (req, res) => {
                     cpuLoad: Math.floor(Math.random() * 100),
 
                     memoryUsage: Math.floor(Math.random() * 100),
-                };
+                });
             },
         );
+
+        Object.values(managedWorkers).forEach((worker) => {
+            const managedWorker = JSON.parse(worker);
+            const existingWorker = parsedWorkersById.get(managedWorker.workerId);
+
+            parsedWorkersById.set(
+                managedWorker.workerId,
+                {
+                    ...managedWorker,
+                    ...existingWorker,
+                    managed: true,
+                    controlStatus: managedWorker.status,
+                    isAlive: existingWorker?.isAlive || managedWorker.status === "RUNNING",
+                    currentJob: existingWorker?.currentJob || workerJobs[managedWorker.workerId] || null,
+                    lastSeen: existingWorker?.lastSeen || managedWorker.updatedAt,
+                    processedJobs: existingWorker?.processedJobs || 0,
+                    cpuLoad: existingWorker?.cpuLoad || 0,
+                    memoryUsage: existingWorker?.memoryUsage || 0,
+                }
+            );
+        });
+
+        const parsedWorkers = Array.from(parsedWorkersById.values())
+            .sort((a, b) => Number(b.lastSeen || 0) - Number(a.lastSeen || 0));
 
         return res.json({
             success: true,
