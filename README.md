@@ -1,350 +1,130 @@
-# PulseQueue
+# ⚡ PulseQueue
 
-A distributed job processing system built with Node.js, Redis, and React.
+> **Distributed job processing — built from first principles.**
 
-PulseQueue is a mini distributed task queue inspired by systems like BullMQ, Celery, and Sidekiq.  
-It supports asynchronous job execution, retries, delayed jobs, worker coordination, crash recovery, and real-time monitoring.
+A production-inspired task queue system featuring asynchronous job execution, priority scheduling, exponential backoff retries, distributed worker coordination via heartbeats, and automated crash recovery — backed by Redis, containerized with Docker.
 
----
-
-# Features
-
-- Distributed worker architecture
-- Priority queues
-- Delayed jobs
-- Retry system with exponential backoff
-- Worker heartbeats
-- Crash recovery
-- Active job tracking
-- Fault-tolerant processing
-- Real-time queue monitoring
-- Redis-backed persistence
-- Dockerized infrastructure
-- Horizontal worker scaling
+*Inspired by BullMQ · Celery · Sidekiq · AWS SQS · RabbitMQ*
 
 ---
 
-# Tech Stack
+## Stack
 
-## Backend
-
-- Node.js
-- Express.js
-- Redis
-- Socket.IO
-
-## Frontend
-
-- React
-- MUI
-- Recharts
-
-## Infrastructure
-
-- Docker
-- Docker Compose
+`Node.js` `Express` `Redis` `Socket.IO` `React` `MUI` `Recharts` `Docker Compose`
 
 ---
 
-# System Architecture
+## What's Built
 
-```text
-                ┌──────────────────┐
-                │     Clients      │
-                └────────┬─────────┘
-                         │
-                         ▼
-                ┌──────────────────┐
-                │    API Server    │
-                │  Job Producer    │
-                └────────┬─────────┘
-                         │
-                         ▼
-                ┌──────────────────┐
-                │      Redis       │
-                │ Queue + Storage  │
-                └────────┬─────────┘
-                         │
-          ┌──────────────┼──────────────┐
-          │              │              │
-          ▼              ▼              ▼
-   ┌──────────┐   ┌──────────┐   ┌──────────┐
-   │ Worker 1 │   │ Worker 2 │   │ Worker 3 │
-   └────┬─────┘   └────┬─────┘   └────┬─────┘
-        │              │              │
-        └──────────────┼──────────────┘
-                       ▼
-             ┌─────────────────┐
-             │ Retry Scheduler │
-             └─────────────────┘
+| Capability | Detail |
+|---|---|
+| **Distributed Workers** | Horizontally scalable pool — N workers across containers, each polling Redis independently |
+| **Priority Queues** | Three-tier scheduling: `HIGH → MEDIUM → LOW`, workers always drain higher tiers first |
+| **Delayed Jobs** | Redis Sorted Set keyed by scheduled timestamp; scheduler promotes when ready |
+| **Exponential Backoff** | `delay = base × 2ⁿ` — prevents thundering herd on downstream failures |
+| **Heartbeat Coordination** | Workers emit to `workers:heartbeats` every 5s; stale entries trigger recovery |
+| **Crash Recovery** | Orphaned jobs auto-requeued — zero manual intervention required |
+| **Real-time Dashboard** | React + Socket.IO — live queue depths, worker status, job inspection |
+| **Fault-tolerant Persistence** | All state in Redis — survives worker restarts, partial outages |
+
+---
+
+## System Architecture
+
+```
+          Clients
+             │
+             ▼
+        API Server          ← Job ingestion · Express · validation
+             │
+             ▼
+           Redis             ← Queue storage · persistence · coordination
+             │
+    ┌────────┼────────┐
+    ▼        ▼        ▼
+ Worker 1  Worker 2  Worker N   ← Horizontal scale · poll · process · heartbeat
+    └────────┼────────┘
+             ▼
+         Scheduler           ← Delayed job promotion · crash recovery · dead worker detection
 ```
 
 ---
 
-# Job Lifecycle
+## Job Lifecycle
 
-```text
-WAITING
-   │
-   ▼
-ACTIVE
-   │
-   ├──────────────► COMPLETED
-   │
-   ▼
-FAILED
-   │
-   ▼
-RETRY DELAY
-   │
-   ▼
-WAITING
 ```
+WAITING → ACTIVE → COMPLETED
+                ↘
+              FAILED → RETRY DELAY → WAITING (up to maxAttempts)
+```
+
+Jobs are persisted as Redis `HASH` objects and transition atomically through states.
 
 ---
 
-# Distributed Recovery Flow
+## Retry System
 
-```text
-Worker Picks Job
-        │
-        ▼
-Heartbeat Stops
-        │
-        ▼
-Recovery Scanner Detects Dead Worker
-        │
-        ▼
-Job Requeued Automatically
-```
-
----
-
-# Queue Priorities
-
-PulseQueue supports multiple priority levels.
-
-```text
-HIGH
-MEDIUM
-LOW
-```
-
-Workers always process:
-
-```text
-HIGH → MEDIUM → LOW
-```
-
----
-
-# Retry System
-
-PulseQueue implements exponential backoff retries.
-
-## Formula
-
-delay = baseDelay * 2^attempts
-
-## Example
+Formula: `delay = baseDelay × 2^attempts`
 
 | Attempt | Delay |
-|----------|------|
+|---|---|
 | 1 | 2s |
 | 2 | 4s |
 | 3 | 8s |
 | 4 | 16s |
 
----
-
-# Redis Data Structures
-
-| Structure | Purpose |
-|---|---|
-| HASH | Job metadata |
-| LIST | Waiting queues |
-| SORTED SET | Delayed jobs |
-| HASH | Worker heartbeats |
+After `maxAttempts`, the job is moved to `queue:failed` for inspection.
 
 ---
 
-# Redis Keys
+## Distributed Crash Recovery
 
-```text
-jobs:data
-
-queue:waiting:high
-queue:waiting:medium
-queue:waiting:low
-
-queue:completed
-queue:failed
-queue:delayed
-
-queue:active:jobs
-
-workers:heartbeats
-workers:jobs
+```
+1. Worker picks up job → heartbeat starts (every 5s → workers:heartbeats)
+2. Worker crashes mid-processing → heartbeat stops
+3. Scheduler detects stale heartbeat (threshold: 15s)
+4. Orphaned job requeued → next healthy worker picks it up
 ```
 
----
-
-# Monorepo Structure
-
-```text
-pulsequeue/
-│
-├── services/
-│   ├── api-server/
-│   ├── worker/
-│   ├── scheduler/
-│   └── dashboard/
-│
-├── packages/
-│   ├── queue-core/
-│   ├── redis-client/
-│   └── shared/
-│
-├── docker/
-│
-├── docs/
-│
-└── docker-compose.yml
-```
+No job is ever silently lost. Every active job has a registered owner; every owner has a heartbeat.
 
 ---
 
-# Core Components
+## Redis Data Model
 
-## API Server
-
-Responsible for:
-
-- Accepting jobs
-- Validating payloads
-- Pushing jobs into queues
-
----
-
-## Worker Service
-
-Responsible for:
-
-- Polling queues
-- Processing jobs
-- Handling retries
-- Sending heartbeats
+| Structure | Key | Purpose |
+|---|---|---|
+| `HASH` | `jobs:data` | Job metadata and state |
+| `LIST` | `queue:waiting:{high\|medium\|low}` | Priority FIFO queues |
+| `SORTED SET` | `queue:delayed` | Scheduled future jobs (score = run-at timestamp) |
+| `HASH` | `workers:heartbeats` | Worker liveness tracking |
+| `LIST` | `queue:completed` | Audit log |
+| `LIST` | `queue:failed` | Dead letter inspection |
 
 ---
 
-## Scheduler Service
+## API
 
-Responsible for:
-
-- Delayed job scheduling
-- Recovery scanning
-- Dead worker detection
-
----
-
-## Dashboard
-
-Responsible for:
-
-- Queue visualization
-- Worker monitoring
-- Real-time updates
-- Failed job inspection
-
----
-
-# Running Locally
-
-## Clone Repository
-
-```bash
-git clone <repo-url>
-
-cd pulsequeue
-```
-
----
-
-# Start Redis
-
-```bash
-docker compose up -d
-```
-
----
-
-# Start API
-
-```bash
-cd services/api-server
-
-npm install
-
-node src/index.js
-```
-
----
-
-# Start Worker
-
-```bash
-cd services/worker
-
-npm install
-
-node src/index.js
-```
-
----
-
-# Start Scheduler
-
-```bash
-cd services/scheduler
-
-npm install
-
-node src/index.js
-```
-
----
-
-# API Example
-
-## Create Job
+### Enqueue a Job
 
 ```http
 POST /jobs
-```
+Content-Type: application/json
 
-## Request Body
-
-```json
 {
   "type": "EMAIL",
-  "payload": {
-    "to": "test@gmail.com"
-  },
+  "payload": { "to": "user@example.com" },
   "priority": "HIGH"
 }
 ```
 
----
-
-# Example Job Object
+### Job Object
 
 ```json
 {
   "id": "job-123",
   "type": "EMAIL",
-  "payload": {
-    "to": "test@gmail.com"
-  },
+  "payload": { "to": "user@example.com" },
   "status": "WAITING",
   "priority": "HIGH",
   "attempts": 0,
@@ -355,88 +135,64 @@ POST /jobs
 
 ---
 
-# Worker Coordination
+## Monorepo Structure
 
-PulseQueue uses worker heartbeats for distributed coordination.
-
-## Heartbeat Flow
-
-```text
-Worker Starts
-    │
-    ▼
-Heartbeat Every 5 Seconds
-    │
-    ▼
-Recovery Scanner Monitors Workers
+```
+pulsequeue/
+│
+├── services/
+│   ├── api-server/      ← Job ingestion and validation
+│   ├── worker/          ← Poll, process, heartbeat, retry
+│   ├── scheduler/       ← Delayed job promotion + crash recovery
+│   └── dashboard/       ← React monitoring UI
+│
+├── packages/
+│   ├── queue-core/      ← Shared queue abstractions
+│   ├── redis-client/    ← Connection management
+│   └── shared/          ← Types, constants, schemas
+│
+├── docker/
+├── docker-compose.yml
+└── README.md
 ```
 
 ---
 
-# Crash Recovery
-
-If a worker crashes while processing:
-
-```text
-1. Heartbeat expires
-2. Recovery scanner detects dead worker
-3. Active job requeued
-4. Another worker processes job
-```
-
----
-
-# Scalability
-
-PulseQueue supports horizontal scaling.
-
-Run multiple workers:
+## Quick Start
 
 ```bash
-node src/index.js
+# 1. Clone
+git clone <repo-url> && cd pulsequeue
+
+# 2. Start Redis
+docker compose up -d
+
+# 3. Start services
+cd services/api-server  && npm install && node src/index.js
+cd services/worker      && npm install && node src/index.js
+cd services/scheduler   && npm install && node src/index.js
+
+# 4. Scale workers horizontally — just run more
+node src/index.js   # terminal 2
+node src/index.js   # terminal 3
 ```
 
-across multiple terminals or containers.
+---
+
+## Engineering Concepts
+
+`Distributed systems` · `Queueing theory` · `Reliability engineering` · `Fault tolerance`
+`Heartbeat coordination` · `Crash recovery` · `Exponential backoff` · `Async processing`
+`Event-driven architecture` · `Worker orchestration` · `Redis internals`
 
 ---
 
-# Future Improvements
+## Future Roadmap
 
-- Atomic queue claiming
-- BRPOPLPUSH implementation
-- Rate limiting
-- Job dependencies
-- Dead letter queue dashboard
-- Worker autoscaling
-- Kubernetes deployment
-- Metrics aggregation
-- Prometheus integration
-- OpenTelemetry tracing
-
----
-
-# Engineering Concepts Learned
-
-- Distributed systems
-- Queueing systems
-- Reliability engineering
-- Fault tolerance
-- Retry strategies
-- Heartbeat coordination
-- Recovery systems
-- Async processing
-- Event-driven architecture
-- Worker orchestration
-- Redis internals
-
----
-
-# Inspired By
-
-- BullMQ
-- Celery
-- Sidekiq
-- AWS SQS
-- RabbitMQ
-
----
+- [ ] Atomic queue claiming via `BRPOPLPUSH`
+- [ ] Rate limiting per job type
+- [ ] Job dependency graphs
+- [ ] Dead letter queue dashboard UI
+- [ ] Prometheus metrics + Grafana dashboards
+- [ ] OpenTelemetry distributed tracing
+- [ ] Kubernetes deployment with worker autoscaling
