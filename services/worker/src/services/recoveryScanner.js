@@ -113,5 +113,5 @@ export const startRecoveryScanner = async () => {
             );
         }
 
-    }, 5000);
+    }, 60000);
 };

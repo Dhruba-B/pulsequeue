@@ -396,7 +396,7 @@ export default function DashboardPage() {
 
     useEffect(() => {
         fetchStats().then(setStats);
-        const interval = setInterval(loadStats, 3000);
+        const interval = setInterval(loadStats, 60000);
         return () => clearInterval(interval);
     }, []);
 

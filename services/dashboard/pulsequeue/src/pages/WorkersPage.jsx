@@ -18,7 +18,7 @@ export default function WorkersPage() {
     useEffect(() => {
         fetchWorkers().then(setWorkers);
 
-        const interval = setInterval(loadWorkers, 3000);
+        const interval = setInterval(loadWorkers, 60000);
 
         return () => clearInterval(interval);
     }, []);

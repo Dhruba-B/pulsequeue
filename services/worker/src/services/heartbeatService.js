@@ -33,7 +33,7 @@ export const startHeartbeat = async () => {
             );
         }
 
-    }, 5000);
+    }, 60000);
 
     return interval;
 };
