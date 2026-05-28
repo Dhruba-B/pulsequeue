@@ -105,7 +105,7 @@ const SummaryCard = ({ label, value, color, sublabel }) => (
         </Box>
 
 
-        <Stack direction="row" alignItems="flex-end" justifyContent="space-between">
+        <Stack sx={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" }}>
             <Typography sx={{
                 fontFamily: SYNE,
                 fontSize: "36px",
@@ -282,16 +282,10 @@ export default function WorkerControlPage() {
                 }}
             >
                 {/* ── Top bar ─────────────────────────────────────────────── */}
-                <Stack
-                    direction={{ xs: "column", md: "row" }}
-                    alignItems={{ xs: "flex-start", md: "center" }}
-                    justifyContent="space-between"
-                    spacing={2}
-                    sx={{ mb: 4 }}
-                >
+                <Stack sx={{ mb: 4, flexDirection: { xs: "column", md: "row" }, gap: 2, alignItems: { xs: "flex-start", md: "center" }, justifyContent: "space-between" }}>
                     {/* Left: title block */}
                     <Box>
-                        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: "6px" }}>
+                        <Stack sx={{ mb: "6px", flexDirection: "row", gap: 1.5, alignItems: "center" }}>
                             <Box sx={{
                                 width: 34,
                                 height: 34,
@@ -333,7 +327,7 @@ export default function WorkerControlPage() {
                     </Box>
 
                     {/* Right: actions */}
-                    <Stack direction="row" spacing={1} sx={{ flexShrink: 0, alignItems: "center", ml: { xs: 0, md: 2 } }}>
+                    <Stack sx={{ flexShrink: 0, alignItems: "center", ml: { xs: 0, md: 2 }, flexDirection: "row", gap: 1 }}>
                         <StartWorkerButton pending={starting} onStart={handleStartWorker} />
 
                         <Box
@@ -498,7 +492,7 @@ export default function WorkerControlPage() {
                                     </Typography>
                                 </Paper>
                             ) : (
-                                <Stack spacing={1.5}>
+                                <Stack sx={{ gap: 1.5 }}>
                                     {workers.map((worker) => (
                                         <WorkerControlCard
                                             key={worker.workerId}

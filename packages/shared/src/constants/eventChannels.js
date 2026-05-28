@@ -1,5 +1,7 @@
 export const EVENT_CHANNELS = {
     JOB_CREATED: "events:job:created",
+
+    JOB_STARTED: "events:job:started",
   
     JOB_COMPLETED: "events:job:completed",
   

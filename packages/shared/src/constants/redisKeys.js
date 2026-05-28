@@ -26,5 +26,9 @@ export const REDIS_KEYS = {
 
     MANAGED_WORKERS: "workers:managed",
 
-    WORKER_LIFECYCLE_EVENTS: "workers:lifecycle:events"
+    WORKER_LIFECYCLE_EVENTS: "workers:lifecycle:events",
+
+    WORKER_CAPABILITIES: "pulsequeue:worker:capabilities",
+
+    WORKER_METRICS: "pulsequeue:worker:metrics",
 };

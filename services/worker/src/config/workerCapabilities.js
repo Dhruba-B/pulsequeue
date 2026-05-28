@@ -1,0 +1,35 @@
+import { WORKER_CAPABILITIES } from "../../../../packages/shared/src/constants/workerCapabilities.js";
+
+import { WORKER_TYPES } from "../../../../packages/shared/src/constants/workerTypes.js";
+
+const WORKER_TYPE = process.env.WORKER_TYPE || WORKER_TYPES.GENERAL;
+
+const CAPABILITY_MAP = {
+    [WORKER_TYPES.LLM]: [
+        WORKER_CAPABILITIES.SUMMARIZE,
+
+        WORKER_CAPABILITIES.TRANSLATE,
+
+        WORKER_CAPABILITIES.CLASSIFY,
+    ],
+
+    [WORKER_TYPES.OCR]: [WORKER_CAPABILITIES.OCR],
+
+    [WORKER_TYPES.EMBED]: [WORKER_CAPABILITIES.EMBED],
+
+    [WORKER_TYPES.GENERAL]: [
+        WORKER_CAPABILITIES.SUMMARIZE,
+
+        WORKER_CAPABILITIES.TRANSLATE,
+
+        WORKER_CAPABILITIES.CLASSIFY,
+
+        WORKER_CAPABILITIES.OCR,
+
+        WORKER_CAPABILITIES.EMBED,
+    ],
+};
+
+export const WORKER_CAPABILITIES_LIST = CAPABILITY_MAP[WORKER_TYPE];
+
+export { WORKER_TYPE };

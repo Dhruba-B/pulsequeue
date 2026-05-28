@@ -8,7 +8,8 @@ export const createJobObject = ({
     payload,
     priority = JOB_PRIORITY.MEDIUM,
     runAt = null,
-    maxAttempts = 3
+    maxAttempts = 3,
+    execution = {}
 }) => {
     return {
         id: crypto.randomUUID(),
@@ -16,6 +17,8 @@ export const createJobObject = ({
         type,
 
         payload,
+
+        execution,
 
         status: runAt
             ? JOB_STATUS.DELAYED
@@ -28,6 +31,17 @@ export const createJobObject = ({
         maxAttempts,
 
         createdAt: Date.now(),
+
+        timeline: [
+            {
+                status: runAt
+                    ? JOB_STATUS.DELAYED
+                    : JOB_STATUS.WAITING,
+                label: runAt ? "Scheduled for execution" : "Queued for execution",
+                timestamp: Date.now(),
+                capability: execution.preferredCapability || type,
+            }
+        ],
 
         processedAt: null,
 

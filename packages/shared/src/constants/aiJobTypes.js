@@ -1,0 +1,7 @@
+export const AI_JOB_TYPES = {
+    SUMMARIZE: "SUMMARIZE",
+    EMBED: "EMBED",
+    CLASSIFY: "CLASSIFY",
+    OCR: "OCR",
+    TRANSLATE: "TRANSLATE"
+};

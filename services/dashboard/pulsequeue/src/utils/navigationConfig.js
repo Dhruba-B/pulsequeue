@@ -2,10 +2,7 @@ import {
     LayoutDashboard,
     ListTodo,
     Cpu,
-    SlidersHorizontal,
-    AlertTriangle,
-    BarChart3,
-    Settings
+    SlidersHorizontal
 } from "lucide-react";
 
 export const NAV_ITEMS = [
@@ -17,7 +14,7 @@ export const NAV_ITEMS = [
     },
 
     {
-        label: "Jobs",
+        label: "Executions",
         icon: ListTodo,
         path: "/jobs"
     },

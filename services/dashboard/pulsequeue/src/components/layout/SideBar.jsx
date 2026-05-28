@@ -85,7 +85,7 @@ export default function Sidebar() {
 
             {/* Navigation */}
 
-            <Stack spacing={1}>
+            <Stack sx={{ gap: 1 }}>
 
                 {NAV_ITEMS.map((item) => {
 

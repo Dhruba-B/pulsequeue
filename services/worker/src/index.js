@@ -1,3 +1,8 @@
+import dotenv from "dotenv";
+
+dotenv.config({
+    path: "../../.env"
+});
 import { startHeartbeat, stopHeartbeat } from "./services/heartbeatService.js";
 import { startWorker }
     from "./services/workerService.js";

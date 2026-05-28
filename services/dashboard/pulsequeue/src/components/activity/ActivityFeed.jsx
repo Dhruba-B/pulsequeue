@@ -25,14 +25,14 @@ const EVENT_CONFIG = {
     WORKER_OFFLINE: { color: "#FF4D6A", bgColor: "rgba(255,77,106,0.08)", borderColor: "rgba(255,77,106,0.2)", label: "Worker Dn" },
 };
 
-const FILTERS = ["All", "Jobs", "Workers", "Errors"];
+const FILTERS = ["All", "Executions", "Workers", "Errors"];
 
 const getConfig = (type) =>
     EVENT_CONFIG[type] || { color: "#FFB800", bgColor: "rgba(255,184,0,0.08)", borderColor: "rgba(255,184,0,0.2)", label: type };
 
 const matchesFilter = (event, filter) => {
     if (filter === "All") return true;
-    if (filter === "Jobs") return event.type.startsWith("JOB_");
+    if (filter === "Executions") return event.type.startsWith("JOB_");
     if (filter === "Workers") return event.type.startsWith("WORKER_");
     if (filter === "Errors") return event.type === "JOB_FAILED";
     return true;
@@ -238,12 +238,14 @@ export default function ActivityFeed({ events = [] }) {
                 </Typography>
 
                 {/* Live pill */}
-                <Stack direction="row" alignItems="center" spacing={0.75} sx={{
-                    px: "8px",
+                <Stack sx={{ px: "8px",
                     py: "4px",
                     borderRadius: "20px",
                     background: alpha("#00E5A0", 0.07),
                     border: `1px solid ${alpha("#00E5A0", 0.18)}`,
+                    flexDirection: "row",
+                    gap: 0.75,
+                    alignItems: "center",
                 }}>
                     <Box sx={{
                         width: 5,
@@ -333,7 +335,7 @@ export default function ActivityFeed({ events = [] }) {
                     {filtered.length} event{filtered.length !== 1 ? "s" : ""}
                 </Typography>
 
-                <Stack direction="row" spacing={0.5}>
+                <Stack sx={{ flexDirection: "row", gap: 0.5 }}>
                     {FILTERS.map(f => (
                         <FilterBtn
                             key={f}

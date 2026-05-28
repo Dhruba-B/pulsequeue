@@ -75,13 +75,8 @@ export default function WorkerControlCard({
                 }}
             />
 
-            <Stack
-                direction={{ xs: "column", md: "row" }}
-                alignItems={{ xs: "stretch", md: "center" }}
-                gap={2}
-                sx={{ p: "20px", justifyContent: "space-between" }}
-            >
-                <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ minWidth: 0, alignItems: "center", mr: { xs: 0, md: 2 } }}>
+            <Stack sx={{ p: "20px", gap: 2, justifyContent: "space-between", flexDirection: { xs: "column", md: "row" }, alignItems: { xs: "stretch", md: "center" } }}>
+                <Stack sx={{ minWidth: 0, alignItems: "center", mr: { xs: 0, md: 2 }, flexDirection: "row", gap: 1.5 }}>
                     <Box
                         sx={{
                             width: 38,
@@ -111,7 +106,7 @@ export default function WorkerControlCard({
                                     background: alpha(meta.color, 0.08),
                                 }}
                             >
-                                <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
+                                <Stack sx={{ alignItems: "center", flexDirection: "row", gap: 0.75 }}>
                                     <Box
                                         sx={{
                                             width: 7,
@@ -144,11 +139,7 @@ export default function WorkerControlCard({
                     </Box>
                 </Stack>
 
-                <Stack
-                    direction={{ xs: "column", sm: "row" }}
-                    spacing={1}
-                    sx={{ alignItems: { xs: "stretch", sm: "center" } }}
-                >
+                <Stack sx={{ alignItems: { xs: "stretch", sm: "center" }, flexDirection: { xs: "column", sm: "row" }, gap: 1 }}>
 
 
                     <Box

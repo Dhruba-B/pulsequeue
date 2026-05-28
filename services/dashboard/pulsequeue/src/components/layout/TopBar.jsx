@@ -66,7 +66,7 @@ export default function Topbar() {
                         fontSize: 16
                     }}
                 >
-                    Distributed Queue Monitoring
+                    Distributed AI Execution Infrastructure
                 </Typography>
 
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2.5 }}>

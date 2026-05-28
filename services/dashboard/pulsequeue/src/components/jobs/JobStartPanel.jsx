@@ -1,5 +1,8 @@
 import { useMemo, useState } from "react";
 import {
+    Accordion,
+    AccordionDetails,
+    AccordionSummary,
     Box,
     Button,
     CircularProgress,
@@ -11,131 +14,103 @@ import {
     Typography,
     alpha
 } from "@mui/material";
-import { Play, Braces, TimerReset } from "lucide-react";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { BrainCircuit, Cpu, Play, SlidersHorizontal } from "lucide-react";
+
+import AiPayloadEditor from "../ai/AiPayloadEditor";
+import AiPayloadFields from "../ai/AiPayloadFields";
+import { fieldSx, menuSx } from "../ai/aiFormStyles";
+import {
+    AI_JOB_TYPES,
+    AI_MODEL_OPTIONS,
+    JOB_TYPE_CONFIG,
+    RUNTIME_OPTIONS,
+    getDefaultExecution,
+} from "../ai/aiExecutionConfig";
 
 const MONO = "'Space Mono', monospace";
 const SYNE = "'Syne', sans-serif";
 
-const JOB_TYPES = [
-    {
-        value: "EMAIL",
-        label: "EMAIL",
-        payload: {
-            to: "someone@xyz.com"
-        }
-    },
-    {
-        value: "IMAGE_PROCESS",
-        label: "IMAGE_PROCESS",
-        payload: {
-            imageUrl: "https://example.com/image.png"
-        }
-    },
-    {
-        value: "REPORT_GENERATION",
-        label: "REPORT_GENERATION",
-        payload: {
-            reportId: "monthly-ops",
-            format: "pdf"
-        }
-    }
-];
-
 const PRIORITIES = ["HIGH", "MEDIUM", "LOW"];
 
-const fieldSx = {
-    "& .MuiOutlinedInput-root": {
-        fontFamily: MONO,
-        fontSize: "12px",
-        color: "rgba(255,255,255,0.78)",
-        background: "rgba(255,255,255,0.03)",
-        borderRadius: "12px",
-        "& fieldset": {
-            borderColor: "rgba(255,255,255,0.08)",
-        },
-        "&:hover fieldset": {
-            borderColor: "rgba(255,255,255,0.15)",
-        },
-        "&.Mui-focused fieldset": {
-            borderColor: "#00C8FF",
-            borderWidth: "1px",
-        },
-    },
-    "& .MuiInputLabel-root": {
-        fontFamily: MONO,
-        fontSize: "11px",
-        color: "rgba(255,255,255,0.32)",
-        letterSpacing: "1px",
-    },
-    "& .MuiSelect-icon": {
-        color: "rgba(255,255,255,0.32)",
-    },
-};
+const formatPayload = (payload) => JSON.stringify(payload, null, 2);
 
-const menuSx = {
-    PaperProps: {
-        sx: {
-            background: "#0E1420",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "12px",
-            mt: 1,
-            "& .MuiMenuItem-root": {
-                fontFamily: MONO,
-                fontSize: "12px",
-                color: "rgba(255,255,255,0.62)",
-            },
-        },
-    },
-};
-
-const formatPayload = (payload) =>
-    JSON.stringify(payload, null, 2);
+const parsePayload = (payloadText) => JSON.parse(payloadText);
 
 export default function JobStartPanel({
     onSubmit,
     submitting
 }) {
-    const [type, setType] = useState("EMAIL");
+    const [type, setType] = useState("SUMMARIZE");
+    const [payload, setPayload] = useState(JOB_TYPE_CONFIG.SUMMARIZE.payload);
+    const [payloadText, setPayloadText] = useState(formatPayload(JOB_TYPE_CONFIG.SUMMARIZE.payload));
+    const [payloadError, setPayloadError] = useState("");
     const [priority, setPriority] = useState("HIGH");
     const [maxAttempts, setMaxAttempts] = useState(3);
-    const [runAt, setRunAt] = useState("");
-    const [payloadText, setPayloadText] = useState(
-        formatPayload(JOB_TYPES[0].payload)
-    );
-    const [payloadError, setPayloadError] = useState("");
+    const [delayMs, setDelayMs] = useState(0);
+    const [execution, setExecution] = useState(getDefaultExecution("SUMMARIZE"));
 
-    const activeJobType = useMemo(
-        () => JOB_TYPES.find((jobType) => jobType.value === type),
-        [type]
-    );
+    const activeConfig = useMemo(() => JOB_TYPE_CONFIG[type], [type]);
 
     const handleTypeChange = (nextType) => {
-        const nextJobType = JOB_TYPES.find((jobType) => jobType.value === nextType);
+        const nextPayload = JOB_TYPE_CONFIG[nextType].payload;
 
         setType(nextType);
-        setPayloadText(formatPayload(nextJobType.payload));
+        setPayload(nextPayload);
+        setExecution(getDefaultExecution(nextType));
+        setPayloadText(formatPayload(nextPayload));
         setPayloadError("");
     };
 
-    const handleSubmit = async () => {
-        let payload;
+    const handlePayloadChange = (nextPayload) => {
+        setPayload(nextPayload);
+        setPayloadText(formatPayload(nextPayload));
+        setPayloadError("");
+    };
+
+    const handlePayloadTextChange = (nextValue) => {
+        setPayloadText(nextValue);
 
         try {
-            payload = JSON.parse(payloadText);
+            const parsed = parsePayload(nextValue);
+            setPayload(parsed);
             setPayloadError("");
         } catch {
-            setPayloadError("Payload must be valid JSON");
+            setPayloadError("invalid json");
+        }
+    };
+
+    const handleExecutionChange = (patch) => {
+        setExecution((prev) => ({
+            ...prev,
+            ...patch,
+        }));
+    };
+
+    const handleSubmit = async () => {
+        let parsedPayload;
+
+        try {
+            parsedPayload = parsePayload(payloadText);
+            setPayloadError("");
+        } catch {
+            setPayloadError("invalid json");
             return;
         }
 
+        const numericDelay = Number(delayMs || 0);
+
         await onSubmit({
             type,
-            payload,
+            payload: parsedPayload,
             priority,
             maxAttempts: Number(maxAttempts),
-            runAt: runAt
-                ? new Date(runAt).getTime()
-                : null,
+            runAt: numericDelay > 0 ? Date.now() + numericDelay : null,
+            execution: {
+                ...execution,
+                timeoutMs: Number(execution.timeoutMs || 0),
+                delayMs: numericDelay,
+            },
         });
     };
 
@@ -149,7 +124,6 @@ export default function JobStartPanel({
                 background: "rgba(255,255,255,0.028)",
                 border: "1px solid rgba(255,255,255,0.07)",
                 backdropFilter: "blur(16px)",
-                mb: 4,
             }}
         >
             <Box
@@ -157,23 +131,17 @@ export default function JobStartPanel({
                     position: "absolute",
                     inset: 0,
                     pointerEvents: "none",
-                    background: "radial-gradient(ellipse 45% 70% at 100% 0%, rgba(0,200,255,0.07), transparent 58%)",
+                    background: "radial-gradient(ellipse 48% 74% at 100% 0%, rgba(0,200,255,0.08), transparent 58%)",
                 }}
             />
 
             <Box sx={{ position: "relative", p: { xs: 2, md: 2.5 } }}>
-                <Stack
-                    direction={{ xs: "column", md: "row" }}
-                    alignItems={{ xs: "stretch", md: "center" }}
-                    justifyContent="space-between"
-                    spacing={2}
-                    sx={{ mb: 2.5 }}
-                >
-                    <Stack direction="row" spacing={1.4} alignItems="center">
+                <Stack sx={{ mb: 2.5, flexDirection: { xs: "column", md: "row" }, gap: 2, alignItems: { xs: "stretch", md: "center" }, justifyContent: "space-between" }}>
+                    <Stack sx={{ flexDirection: "row", gap: 1.4, alignItems: "center" }}>
                         <Box
                             sx={{
-                                width: 38,
-                                height: 38,
+                                width: 40,
+                                height: 40,
                                 borderRadius: "12px",
                                 display: "flex",
                                 alignItems: "center",
@@ -181,125 +149,131 @@ export default function JobStartPanel({
                                 color: "#00C8FF",
                                 background: alpha("#00C8FF", 0.1),
                                 border: `1px solid ${alpha("#00C8FF", 0.24)}`,
-                                textAlign: "left",
                             }}
                         >
-                            <Braces size={18} />
+                            <BrainCircuit size={19} />
                         </Box>
 
                         <Box>
-                            <Typography sx={{ fontFamily: SYNE, fontSize: "16px", fontWeight: 800, color: "#fff" ,textAlign: "left"}}>
-                                Start Job
+                            <Typography sx={{ fontFamily: SYNE, fontSize: "17px", fontWeight: 800, color: "#fff", textAlign: "left" }}>
+                                Submit AI Execution
                             </Typography>
-                            <Typography sx={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "1.8px", color: "rgba(255,255,255,0.28)", textTransform: "uppercase" }}>
-                                enqueue through existing API
+                            <Typography sx={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "1.8px", color: "rgba(255,255,255,0.3)", textTransform: "uppercase" }}>
+                                capability routed distributed inference
                             </Typography>
                         </Box>
                     </Stack>
                 </Stack>
 
                 <Grid container spacing={1.5}>
-                    <Grid item xs={12} md={4}>
-                        <TextField
-                            select
-                            fullWidth
-                            label="TYPE"
-                            value={type}
-                            onChange={(event) => handleTypeChange(event.target.value)}
-                            sx={{ ...fieldSx, width: 150 }}
-                            SelectProps={{ MenuProps: menuSx }}
-                        >
-                            {JOB_TYPES.map((jobType) => (
-                                <MenuItem key={jobType.value} value={jobType.value}>
-                                    {jobType.label}
-                                </MenuItem>
+                    <Grid size={{ xs: 12, md: 3 }}>
+                        <TextField select fullWidth label="EXECUTION TYPE" value={type} onChange={(event) => handleTypeChange(event.target.value)} sx={fieldSx} slotProps={{ select: { MenuProps: menuSx } }}>
+                            {AI_JOB_TYPES.map((jobType) => (
+                                <MenuItem key={jobType} value={jobType}>{jobType}</MenuItem>
                             ))}
                         </TextField>
                     </Grid>
 
-                    <Grid item xs={12} sm={6} md={3}>
-                        <TextField
-                            select
-                            fullWidth
-                            label="PRIORITY"
-                            value={priority}
-                            onChange={(event) => setPriority(event.target.value)}
-                            sx={{ ...fieldSx, width: 120 }}
-                            SelectProps={{ MenuProps: menuSx }}
-                        >
+                    <Grid size={{ xs: 12, md: 3 }}>
+                        <TextField select fullWidth label="MODEL / ENGINE" value={execution.model} onChange={(event) => handleExecutionChange({ model: event.target.value })} sx={fieldSx} slotProps={{ select: { MenuProps: menuSx } }}>
+                            {AI_MODEL_OPTIONS[type].map((model) => (
+                                <MenuItem key={model} value={model}>{model}</MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
+
+                    <Grid size={{ xs: 12, md: 3 }}>
+                        <TextField select fullWidth label="RUNTIME" value={execution.runtime} onChange={(event) => handleExecutionChange({ runtime: event.target.value })} sx={fieldSx} slotProps={{ select: { MenuProps: menuSx } }}>
+                            {RUNTIME_OPTIONS[type].map((runtime) => (
+                                <MenuItem key={runtime} value={runtime}>{runtime}</MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
+
+                    <Grid size={{ xs: 12, md: 3 }}>
+                        <TextField select fullWidth label="PRIORITY" value={priority} onChange={(event) => setPriority(event.target.value)} sx={fieldSx} slotProps={{ select: { MenuProps: menuSx } }}>
                             {PRIORITIES.map((item) => (
-                                <MenuItem key={item} value={item}>
-                                    {item}
-                                </MenuItem>
+                                <MenuItem key={item} value={item}>{item}</MenuItem>
                             ))}
                         </TextField>
                     </Grid>
 
-                    <Grid item xs={12} sm={6} md={2}>
-                        <TextField
-                            fullWidth
-                            label="ATTEMPTS"
-                            type="number"
-                            value={maxAttempts}
-                            onChange={(event) => setMaxAttempts(event.target.value)}
-                            inputProps={{ min: 1, max: 10 }}
-                            sx={fieldSx}
-                        />
-                    </Grid>
+                    <Box sx={{ display: "flex", flexDirection: "row", gap: 1.5, width: "100%" }}>
+                        <Box sx={{ p: 1.4, flex: 1, borderRadius: "14px", background: alpha("#00C8FF", 0.045), border: `1px solid ${alpha("#00C8FF", 0.12)}` }}>
+                            <Stack sx={{ flexDirection: "row", gap: 1, alignItems: "center", mb: 1.3 }}>
+                                <Cpu size={14} color="#00C8FF" />
+                                <Typography sx={{ fontFamily: MONO, fontSize: 10, letterSpacing: "1.5px", color: "#00C8FF", textTransform: "uppercase" }}>
+                                    {activeConfig.capability} capability
+                                </Typography>
+                                <Typography sx={{ fontFamily: MONO, fontSize: 11, color: "rgba(255,255,255,0.42)" }}>
+                                    {activeConfig.description}
+                                </Typography>
+                            </Stack>
+                            <AiPayloadFields type={type} payload={payload} onChange={handlePayloadChange} />
+                        </Box>
+                        <Grid size={{ xs: 12 }} sx={{ p: 0, borderRadius: "14px", flex: 1, background: alpha("#FF4D6A", 0.045), border: `1px solid ${alpha("#FF4D6A", 0.12)}` }}>
+                            <AiPayloadEditor
+                                label={`payload json / ${type}`}
+                                value={payloadText}
+                                onChange={handlePayloadTextChange}
+                                error={payloadError}
+                            />
+                        </Grid>
+                    </Box>
 
-                    <Grid item xs={12} md={3}>
-                        <TextField
-                            fullWidth
-                            label="RUN AT"
-                            type="datetime-local"
-                            slotProps={{
-                                inputLabel: {
-                                    shrink: true,
-                                },
-                            }}
-                            value={runAt}
-                            onChange={(event) => setRunAt(event.target.value)}
-                            sx={fieldSx}
-                            InputProps={{
-                                startAdornment: (
-                                    <TimerReset size={14} color="rgba(255,255,255,0.28)" />
-                                ),
-                            }}
-                        />
-                    </Grid>
 
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            multiline
-                            minRows={7}
-                            label={`PAYLOAD JSON / ${activeJobType.label}`}
-                            value={payloadText}
-                            onChange={(event) => setPayloadText(event.target.value)}
-                            error={Boolean(payloadError)}
-                            helperText={payloadError || " "}
+
+                    <Grid size={{ xs: 12 }}>
+                        <Accordion
+                            disableGutters
+                            elevation={0}
                             sx={{
-                                ...fieldSx,
-                                "& .MuiInputBase-input": {
-                                    fontFamily: MONO,
-                                    lineHeight: 1.55,
-                                },
-                                "& .MuiFormHelperText-root": {
-                                    fontFamily: MONO,
-                                    color: payloadError ? "#FF4D6A" : "rgba(255,255,255,0.18)",
-                                },
+                                background: "rgba(255,255,255,0.025)",
+                                border: "1px solid rgba(255,255,255,0.07)",
+                                borderRadius: "14px !important",
+                                overflow: "hidden",
+                                "&:before": { display: "none" },
                             }}
-                        />
+                        >
+                            <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: "rgba(255,255,255,0.45)" }} />}>
+                                <Stack sx={{ flexDirection: "row", gap: 1, alignItems: "center" }}>
+                                    <SlidersHorizontal size={15} color="#7B8CDE" />
+                                    <Typography sx={{ fontFamily: MONO, fontSize: 11, letterSpacing: "1.5px", color: "rgba(255,255,255,0.52)", textTransform: "uppercase" }}>
+                                        Advanced execution metadata
+                                    </Typography>
+                                </Stack>
+                            </AccordionSummary>
+                            <AccordionDetails>
+                                <Grid container spacing={1.5}>
+                                    <Grid size={{ xs: 12, md: 3 }}>
+                                        <TextField fullWidth label="RETRIES" type="number" value={maxAttempts} onChange={(event) => setMaxAttempts(event.target.value)} slotProps={{ htmlInput: { min: 1, max: 10 } }} sx={fieldSx} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, md: 3 }}>
+                                        <TextField fullWidth label="DELAY MS" type="number" value={delayMs} onChange={(event) => setDelayMs(event.target.value)} slotProps={{ htmlInput: { min: 0 } }} sx={fieldSx} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, md: 3 }}>
+                                        <TextField fullWidth label="TIMEOUT MS" type="number" value={execution.timeoutMs} onChange={(event) => handleExecutionChange({ timeoutMs: event.target.value })} slotProps={{ htmlInput: { min: 1000 } }} sx={fieldSx} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, md: 3 }}>
+                                        <TextField fullWidth label="WORKER AFFINITY" value={execution.workerAffinity} onChange={(event) => handleExecutionChange({ workerAffinity: event.target.value })} placeholder="worker id or pool" sx={fieldSx} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, md: 4 }}>
+                                        <TextField fullWidth label="PREFERRED CAPABILITY" value={execution.preferredCapability} onChange={(event) => handleExecutionChange({ preferredCapability: event.target.value })} sx={fieldSx} />
+                                    </Grid>
+                                </Grid>
+                            </AccordionDetails>
+                        </Accordion>
                     </Grid>
-
                 </Grid>
+
                 <Button
-                    disabled={submitting}
+                    disabled={submitting || Boolean(payloadError)}
                     onClick={handleSubmit}
                     startIcon={submitting ? <CircularProgress size={15} /> : <Play size={15} />}
                     sx={{
-                        minHeight: 40,
-                        px: 2,
+                        mt: 2,
+                        minHeight: 42,
+                        px: 2.2,
                         borderRadius: "12px",
                         fontFamily: MONO,
                         fontSize: "11px",
@@ -307,13 +281,14 @@ export default function JobStartPanel({
                         color: "#080B10",
                         background: "linear-gradient(135deg, #00C8FF, #00E5A0)",
                         boxShadow: "0 0 22px rgba(0,200,255,0.18)",
-                        "&:hover": {
-                            boxShadow: "0 0 30px rgba(0,229,160,0.22)",
+                        "&:hover": { boxShadow: "0 0 30px rgba(0,229,160,0.22)" },
+                        "&.Mui-disabled": {
+                            color: "rgba(255,255,255,0.28)",
+                            background: "rgba(255,255,255,0.08)",
                         },
-
                     }}
                 >
-                    Enqueue Job
+                    Dispatch Execution
                 </Button>
             </Box>
         </Paper>

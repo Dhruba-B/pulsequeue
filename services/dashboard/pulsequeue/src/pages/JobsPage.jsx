@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
     Box,
     Typography,
@@ -17,8 +17,12 @@ import { createJob, fetchJobs } from "../api/dashboardApi";
 import JobsTable from "../components/tables/JobsTable";
 import JobStartPanel from "../components/jobs/JobStartPanel";
 import InfraSnackbar from "../components/common/InfraSnackbar";
+import ExecutionLivePanel from "../components/execution/ExecutionLivePanel";
+import { AI_JOB_TYPES } from "../components/ai/aiExecutionConfig";
+import socket from "../hooks/useSocket";
 
 const statuses = ["", "WAITING", "ACTIVE", "COMPLETED", "FAILED", "DELAYED"];
+const AI_JOB_TYPE_SET = new Set(AI_JOB_TYPES);
 
 const STATUS_ACCENT = {
     "": "rgba(255,255,255,0.3)",
@@ -95,6 +99,8 @@ export default function JobsPage() {
     const [status, setStatus] = useState("");
     const [search, setSearch] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const [liveExecutionId, setLiveExecutionId] = useState("");
+    const [executionEvents, setExecutionEvents] = useState([]);
     const [snackbar, setSnackbar] = useState({
         open: false,
         message: "",
@@ -105,24 +111,50 @@ export default function JobsPage() {
         setSnackbar({ open: true, message, severity });
     };
 
-    const loadJobs = async () => {
+    const loadJobs = useCallback(async () => {
         const res = await fetchJobs({ status, search });
-        setJobs(res.data);
-    };
+        setJobs(res.data.filter((job) => AI_JOB_TYPE_SET.has(job.type)));
+    }, [status, search]);
 
     useEffect(() => {
-        fetchJobs({ status, search }).then((res) => setJobs(res.data));
+        fetchJobs({ status, search }).then((res) => setJobs(res.data.filter((job) => AI_JOB_TYPE_SET.has(job.type))));
     }, [status, search]);
+
+    useEffect(() => {
+        const refreshJobs = () => loadJobs();
+        const addExecutionEvent = (event) => {
+            setExecutionEvents((prev) => [event, ...prev].slice(0, 80));
+            refreshJobs();
+        };
+
+        socket.on("ai_activity", addExecutionEvent);
+        socket.on("job_created", refreshJobs);
+
+        return () => {
+            socket.off("ai_activity", addExecutionEvent);
+            socket.off("job_created", refreshJobs);
+        };
+    }, [loadJobs]);
 
     const handleCreateJob = async (job) => {
         setSubmitting(true);
         try {
             const createdJob = await createJob(job);
             setJobs((prev) => [createdJob, ...prev]);
-            showSnackbar(`${createdJob.type} job enqueued`, "success");
+            setLiveExecutionId(createdJob.id);
+            setExecutionEvents((prev) => [
+                {
+                    type: "JOB_CREATED",
+                    message: `${createdJob.type} accepted by control plane`,
+                    timestamp: createdJob.createdAt,
+                    payload: createdJob,
+                },
+                ...prev,
+            ].slice(0, 80));
+            showSnackbar(`${createdJob.type} execution dispatched`, "success");
             await loadJobs();
         } catch {
-            showSnackbar("Failed to enqueue job", "error");
+            showSnackbar("Failed to dispatch execution", "error");
         } finally {
             setSubmitting(false);
         }
@@ -179,7 +211,7 @@ export default function JobsPage() {
                                     mb: 0.75,
                                 }}
                             >
-                                Jobs
+                                AI Execution Console
                             </Typography>
                             <Typography
                                 sx={{
@@ -190,7 +222,7 @@ export default function JobsPage() {
                                     fontFamily: "'Space Mono', monospace",
                                 }}
                             >
-                                {jobs.length} result{jobs.length !== 1 ? "s" : ""}
+                                {jobs.length} execution{jobs.length !== 1 ? "s" : ""}
                             </Typography>
                         </Box>
                     </Box>
@@ -202,26 +234,27 @@ export default function JobsPage() {
                         <JobStartPanel submitting={submitting} onSubmit={handleCreateJob} />
                     </Box>
 
+                    <Box sx={{ mb: 4 }}>
+                        <ExecutionLivePanel executionId={liveExecutionId} events={executionEvents} />
+                    </Box>
+
                     <Divider sx={{ borderColor: "rgba(255,255,255,0.05)", mb: 3 }} />
 
                     {/* ── Filter bar ── */}
-                    <Stack
-                        direction={{ xs: "column", sm: "row" }}
-                        alignItems={{ xs: "stretch", sm: "center" }}
-                        spacing={1.5}
-                        sx={{ mb: 3 }}
-                    >
+                    <Stack sx={{ mb: 3, flexDirection: { xs: "column", sm: "row" }, gap: 1.5, alignItems: { xs: "stretch", sm: "center" } }}>
                         <TextField
-                            placeholder="Search jobs..."
+                            placeholder="Search executions..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             sx={{ flex: 1, maxWidth: { sm: 360 }, ...inputSx }}
-                            InputProps={{
-                                startAdornment: (
+                            slotProps={{
+                                input: {
+                                    startAdornment: (
                                     <InputAdornment position="start">
                                         <SearchIcon sx={{ fontSize: 16 }} />
                                     </InputAdornment>
-                                ),
+                                    ),
+                                },
                             }}
                         />
 
@@ -242,8 +275,9 @@ export default function JobsPage() {
                                     borderColor: activeAccent,
                                 },
                             }}
-                            InputProps={{
-                                startAdornment: (
+                            slotProps={{
+                                input: {
+                                    startAdornment: (
                                     <InputAdornment position="start">
                                         <FilterListIcon
                                             sx={{
@@ -254,9 +288,10 @@ export default function JobsPage() {
                                             }}
                                         />
                                     </InputAdornment>
-                                ),
+                                    ),
+                                },
+                                select: { MenuProps: menuSx },
                             }}
-                            SelectProps={{ MenuProps: menuSx }}
                         >
                             {statuses.map((item) => (
                                 <MenuItem key={item} value={item}>

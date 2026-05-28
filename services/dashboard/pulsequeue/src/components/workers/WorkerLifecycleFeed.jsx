@@ -228,12 +228,14 @@ export default function WorkerLifecycleFeed({ events = [] }) {
                 </Typography>
 
                 {/* Live pill */}
-                <Stack direction="row" alignItems="center" spacing={0.75} sx={{
-                    px: "8px",
+                <Stack sx={{ px: "8px",
                     py: "4px",
                     borderRadius: "20px",
                     background: alpha("#00E5A0", 0.07),
                     border: `1px solid ${alpha("#00E5A0", 0.18)}`,
+                    flexDirection: "row",
+                    gap: 0.75,
+                    alignItems: "center",
                 }}>
                     <Box sx={{
                         width: 5,
@@ -325,7 +327,7 @@ export default function WorkerLifecycleFeed({ events = [] }) {
                     {filtered.length} event{filtered.length !== 1 ? "s" : ""}
                 </Typography>
 
-                <Stack direction="row" spacing={0.5}>
+                <Stack sx={{ flexDirection: "row", gap: 0.5 }}>
                     {FILTERS.map((f) => (
                         <FilterBtn
                             key={f}

@@ -4,7 +4,11 @@
   "description": "A distributed job processing system",
   "main": "index.js",
   "type": "module",
-  "scripts": {},
+  "scripts": {
+    "worker:llm": "cross-env WORKER_TYPE=LLM node services/worker/src/index.js",
+    "worker:ocr": "cross-env WORKER_TYPE=OCR node services/worker/src/index.js",
+    "worker:embed": "cross-env WORKER_TYPE=EMBED node services/worker/src/index.js"
+  },
   "author": "Dhrubashis Basak",
   "license": "ISC",
   "dependencies": {
@@ -12,9 +16,11 @@
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^9.0.1",
     "axios": "^1.16.1",
+    "cross-env": "^10.1.0",
     "dotenv": "^17.4.2",
     "ioredis": "^5.10.1",
     "lucide-react": "^1.16.0",
+    "ollama": "^0.6.3",
     "react-router-dom": "^7.15.1",
     "recharts": "^3.8.1",
     "socket.io-client": "^4.8.3"

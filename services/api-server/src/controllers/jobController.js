@@ -4,10 +4,20 @@ import { createJobObject }
 import { addJobToQueue }
     from "../../../../packages/queue-core/src/queueService.js";
 import { emitJobCreated } from "../services/socketEvents.js";
+import { AI_JOB_TYPES }
+    from "../../../../packages/shared/src/constants/aiJobTypes.js";
+
+const SUPPORTED_AI_JOB_TYPES = new Set(Object.values(AI_JOB_TYPES));
 
 export const createJob = async (req, res) => {
 
     try {
+        if (!SUPPORTED_AI_JOB_TYPES.has(req.body?.type)) {
+            return res.status(400).json({
+                success: false,
+                message: "Unsupported AI execution type"
+            });
+        }
 
         const job = createJobObject(req.body);
 

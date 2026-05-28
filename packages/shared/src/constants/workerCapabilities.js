@@ -1,0 +1,7 @@
+export const WORKER_CAPABILITIES = {
+    OCR: "OCR",
+    EMBED: "EMBED",
+    SUMMARIZE: "SUMMARIZE",
+    TRANSLATE: "TRANSLATE",
+    CLASSIFY: "CLASSIFY"
+};
