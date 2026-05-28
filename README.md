@@ -1,155 +1,315 @@
 # ⚡ PulseQueue
 
-> **Distributed job processing — built from first principles.**
+> **Distributed AI execution infrastructure — built from first principles.**
 
-A production-inspired task queue system featuring asynchronous job execution, priority scheduling, exponential backoff retries, distributed worker coordination via heartbeats, and automated crash recovery — backed by Redis, containerized with Docker.
+PulseQueue is a cloud-native distributed AI execution platform featuring:
 
-*Inspired by BullMQ · Celery · Sidekiq · AWS SQS · RabbitMQ*
+* specialized AI workers
+* capability-based scheduling
+* local LLM inference
+* OCR execution
+* embedding generation
+* distributed orchestration
+* realtime observability
+* fault-tolerant queue coordination
 
----
+Built using Redis-backed distributed systems concepts inspired by:
 
-## Stack
-
-`Node.js` `Express` `Redis` `Socket.IO` `React` `MUI` `Recharts` `Docker Compose`
-
----
-
-## What's Built
-
-| Capability | Detail |
-|---|---|
-| **Distributed Workers** | Horizontally scalable pool — N workers across containers, each polling Redis independently |
-| **Priority Queues** | Three-tier scheduling: `HIGH → MEDIUM → LOW`, workers always drain higher tiers first |
-| **Delayed Jobs** | Redis Sorted Set keyed by scheduled timestamp; scheduler promotes when ready |
-| **Exponential Backoff** | `delay = base × 2ⁿ` — prevents thundering herd on downstream failures |
-| **Heartbeat Coordination** | Workers emit to `workers:heartbeats` every 5s; stale entries trigger recovery |
-| **Crash Recovery** | Orphaned jobs auto-requeued — zero manual intervention required |
-| **Real-time Dashboard** | React + Socket.IO — live queue depths, worker status, job inspection |
-| **Fault-tolerant Persistence** | All state in Redis — survives worker restarts, partial outages |
+* BullMQ
+* Celery
+* Sidekiq
+* Temporal
+* Ray
+* Modal
+* RunPod
 
 ---
 
-## System Architecture
+# 🚀 Evolution
 
+PulseQueue originally began as a distributed job processing system.
+
+It has now evolved into:
+
+# Distributed AI Execution Infrastructure
+
+The platform focuses on:
+
+* AI orchestration
+* distributed inference execution
+* specialized worker clusters
+* realtime AI observability
+* cloud-native execution pipelines
+
+NOT:
+
+* chatbot wrappers
+* generic AI SaaS
+* CRUD admin dashboards
+
+---
+
+# 🧠 AI Capabilities
+
+PulseQueue currently supports:
+
+| AI Job Type | Runtime             |
+| ----------- | ------------------- |
+| `SUMMARIZE` | Ollama local LLM    |
+| `TRANSLATE` | Ollama local LLM    |
+| `OCR`       | Tesseract OCR       |
+| `EMBED`     | Xenova Transformers |
+| `CLASSIFY`  | Local inference     |
+
+---
+
+# 🏗️ Core Architecture
+
+```text
+                    Clients
+                       │
+                       ▼
+                 API Gateway
+                       │
+                       ▼
+                     Redis
+                       │
+        ┌──────────────┼──────────────┐
+        ▼              ▼              ▼
+
+   LLM Workers     OCR Workers    Embed Workers
+        │              │              │
+        ▼              ▼              ▼
+
+    Ollama         Tesseract      Xenova
+    Runtime            OCR       Embeddings
 ```
-          Clients
-             │
-             ▼
-        API Server          ← Job ingestion · Express · validation
-             │
-             ▼
-           Redis             ← Queue storage · persistence · coordination
-             │
-    ┌────────┼────────┐
-    ▼        ▼        ▼
- Worker 1  Worker 2  Worker N   ← Horizontal scale · poll · process · heartbeat
-    └────────┼────────┘
-             ▼
-         Scheduler           ← Delayed job promotion · crash recovery · dead worker detection
+
+---
+
+# ⚡ Distributed Worker Model
+
+PulseQueue uses:
+
+# Capability-Based Worker Routing
+
+Workers advertise supported execution capabilities.
+
+Examples:
+
+| Worker Type | Capabilities                         |
+| ----------- | ------------------------------------ |
+| `LLM`       | `SUMMARIZE`, `TRANSLATE`, `CLASSIFY` |
+| `OCR`       | `OCR`                                |
+| `EMBED`     | `EMBED`                              |
+| `GENERAL`   | All capabilities                     |
+
+Workers ONLY claim compatible jobs from priority queues.
+
+This enables:
+
+* specialized execution
+* heterogeneous worker clusters
+* future GPU routing
+* intelligent scheduling
+* execution isolation
+
+---
+
+# 🧩 Stack
+
+## Frontend
+
+* React
+* MUI
+* Socket.IO
+* Recharts
+
+## Backend
+
+* Node.js
+* Express
+* Redis
+
+## AI Runtime
+
+* Ollama
+* Tesseract.js
+* Xenova Transformers
+
+## Infrastructure
+
+* Docker Compose
+* Distributed workers
+* Realtime telemetry
+
+---
+
+# 🔥 Features
+
+| Capability                      | Detail                                                    |
+| ------------------------------- | --------------------------------------------------------- |
+| **Distributed AI Workers**      | Horizontally scalable specialized worker clusters         |
+| **Capability-Based Scheduling** | Workers claim only compatible AI jobs                     |
+| **Priority Queues**             | `HIGH → MEDIUM → LOW` execution ordering                  |
+| **Local AI Inference**          | Ollama-powered LLM execution without cloud API dependency |
+| **OCR Execution**               | Distributed OCR workers using Tesseract                   |
+| **Embedding Generation**        | Local embedding inference using Xenova                    |
+| **Realtime Observability**      | Live execution telemetry via Socket.IO                    |
+| **Crash Recovery**              | Automatic orphaned job recovery                           |
+| **Retry System**                | Exponential backoff retry handling                        |
+| **Distributed Coordination**    | Redis-backed worker orchestration                         |
+| **AI Execution Monitoring**     | Worker capabilities, inference timing, queue telemetry    |
+
+---
+
+# 📊 AI Execution Lifecycle
+
+```text
+QUEUED
+   ↓
+ROUTED TO CAPABLE WORKER
+   ↓
+INFERENCE STARTED
+   ↓
+ACTIVE EXECUTION
+   ↓
+COMPLETED
+```
+
+Failure flow:
+
+```text
+FAILED
+   ↓
+EXPONENTIAL BACKOFF
+   ↓
+RETRY
+   ↓
+DEAD LETTER
 ```
 
 ---
 
-## Job Lifecycle
+# 🧠 AI Execution Examples
 
-```
-WAITING → ACTIVE → COMPLETED
-                ↘
-              FAILED → RETRY DELAY → WAITING (up to maxAttempts)
-```
+## Summarization Job
 
-Jobs are persisted as Redis `HASH` objects and transition atomically through states.
-
----
-
-## Retry System
-
-Formula: `delay = baseDelay × 2^attempts`
-
-| Attempt | Delay |
-|---|---|
-| 1 | 2s |
-| 2 | 4s |
-| 3 | 8s |
-| 4 | 16s |
-
-After `maxAttempts`, the job is moved to `queue:failed` for inspection.
-
----
-
-## Distributed Crash Recovery
-
-```
-1. Worker picks up job → heartbeat starts (every 5s → workers:heartbeats)
-2. Worker crashes mid-processing → heartbeat stops
-3. Scheduler detects stale heartbeat (threshold: 15s)
-4. Orphaned job requeued → next healthy worker picks it up
-```
-
-No job is ever silently lost. Every active job has a registered owner; every owner has a heartbeat.
-
----
-
-## Redis Data Model
-
-| Structure | Key | Purpose |
-|---|---|---|
-| `HASH` | `jobs:data` | Job metadata and state |
-| `LIST` | `queue:waiting:{high\|medium\|low}` | Priority FIFO queues |
-| `SORTED SET` | `queue:delayed` | Scheduled future jobs (score = run-at timestamp) |
-| `HASH` | `workers:heartbeats` | Worker liveness tracking |
-| `LIST` | `queue:completed` | Audit log |
-| `LIST` | `queue:failed` | Dead letter inspection |
-
----
-
-## API
-
-### Enqueue a Job
-
-```http
-POST /jobs
-Content-Type: application/json
-
+```json
 {
-  "type": "EMAIL",
-  "payload": { "to": "user@example.com" },
+  "type": "SUMMARIZE",
+
+  "payload": {
+    "text": "Redis is an in-memory data structure store..."
+  },
+
   "priority": "HIGH"
 }
 ```
 
-### Job Object
+---
+
+## OCR Job
 
 ```json
 {
-  "id": "job-123",
-  "type": "EMAIL",
-  "payload": { "to": "user@example.com" },
-  "status": "WAITING",
-  "priority": "HIGH",
-  "attempts": 0,
-  "maxAttempts": 3,
-  "createdAt": 1747620000000
+  "type": "OCR",
+
+  "payload": {
+    "imageUrl": "https://..."
+  }
 }
 ```
 
 ---
 
-## Monorepo Structure
+## Embedding Job
 
+```json
+{
+  "type": "EMBED",
+
+  "payload": {
+    "text": "Distributed AI systems"
+  }
+}
 ```
+
+---
+
+# 🧠 AI Result Persistence
+
+Completed AI executions store:
+
+* inference outputs
+* execution metadata
+* worker assignment
+* timing metrics
+* retry information
+
+Examples:
+
+* summaries
+* OCR text
+* embedding metadata
+* translated content
+* classification labels
+
+---
+
+# 📡 Realtime Observability
+
+PulseQueue includes a realtime observability dashboard featuring:
+
+* live queue telemetry
+* worker monitoring
+* AI execution streams
+* inference metrics
+* worker capabilities
+* execution timelines
+* active job tracking
+* distributed worker health
+
+Designed to feel similar to:
+
+* Trigger.dev
+* Modal
+* RunPod
+* Ray Dashboard
+
+---
+
+# 🗂️ Redis Data Model
+
+| Structure              | Purpose                   |
+| ---------------------- | ------------------------- |
+| `jobs:data`            | AI job metadata           |
+| `queue:waiting:*`      | Priority execution queues |
+| `queue:delayed`        | Scheduled jobs            |
+| `workers:heartbeats`   | Worker liveness           |
+| `workers:capabilities` | Capability registry       |
+| `queue:completed`      | Execution audit log       |
+| `queue:failed`         | Dead letter queue         |
+
+---
+
+# 📁 Monorepo Structure
+
+```text
 pulsequeue/
 │
 ├── services/
-│   ├── api-server/      ← Job ingestion and validation
-│   ├── worker/          ← Poll, process, heartbeat, retry
-│   ├── scheduler/       ← Delayed job promotion + crash recovery
-│   └── dashboard/       ← React monitoring UI
+│   ├── api-server/
+│   ├── worker/
+│   ├── scheduler/
+│   └── dashboard/
 │
 ├── packages/
-│   ├── queue-core/      ← Shared queue abstractions
-│   ├── redis-client/    ← Connection management
-│   └── shared/          ← Types, constants, schemas
+│   ├── ai-core/
+│   ├── queue-core/
+│   ├── redis-client/
+│   ├── metrics/
+│   └── shared/
 │
 ├── docker/
 ├── docker-compose.yml
@@ -158,41 +318,113 @@ pulsequeue/
 
 ---
 
-## Quick Start
+# 🚀 Quick Start
+
+## 1. Clone Repository
 
 ```bash
-# 1. Clone
-git clone <repo-url> && cd pulsequeue
+git clone <repo-url>
 
-# 2. Start Redis
-docker compose up -d
-
-# 3. Start services
-cd services/api-server  && npm install && node src/index.js
-cd services/worker      && npm install && node src/index.js
-cd services/scheduler   && npm install && node src/index.js
-
-# 4. Scale workers horizontally — just run more
-node src/index.js   # terminal 2
-node src/index.js   # terminal 3
+cd pulsequeue
 ```
 
 ---
 
-## Engineering Concepts
+## 2. Start Redis
 
-`Distributed systems` · `Queueing theory` · `Reliability engineering` · `Fault tolerance`
-`Heartbeat coordination` · `Crash recovery` · `Exponential backoff` · `Async processing`
-`Event-driven architecture` · `Worker orchestration` · `Redis internals`
+```bash
+docker compose up -d
+```
 
 ---
 
-## Future Roadmap
+## 3. Install Ollama
 
-- [ ] Atomic queue claiming via `BRPOPLPUSH`
-- [ ] Rate limiting per job type
-- [ ] Job dependency graphs
-- [ ] Dead letter queue dashboard UI
-- [ ] Prometheus metrics + Grafana dashboards
-- [ ] OpenTelemetry distributed tracing
-- [ ] Kubernetes deployment with worker autoscaling
+Download:
+https://ollama.com
+
+Pull model:
+
+```bash
+ollama pull qwen2.5:3b
+```
+
+---
+
+## 4. Start Services
+
+```bash
+node services/api-server/src/index.js
+
+node services/scheduler/src/index.js
+```
+
+---
+
+## 5. Start Specialized Workers
+
+## LLM Worker
+
+```bash
+WORKER_TYPE=LLM node services/worker/src/index.js
+```
+
+## OCR Worker
+
+```bash
+WORKER_TYPE=OCR node services/worker/src/index.js
+```
+
+## EMBED Worker
+
+```bash
+WORKER_TYPE=EMBED node services/worker/src/index.js
+```
+
+---
+
+# 🧠 Engineering Concepts
+
+* Distributed systems
+* AI orchestration
+* Capability routing
+* Queueing theory
+* Reliability engineering
+* Fault tolerance
+* Event-driven architecture
+* Worker specialization
+* Realtime telemetry
+* Distributed inference execution
+* AI observability
+* Local inference infrastructure
+
+---
+
+# 🔮 Future Roadmap
+
+* [ ] GPU worker orchestration
+* [ ] Kubernetes autoscaling
+* [ ] AI execution DAG pipelines
+* [ ] Vector database integration
+* [ ] OpenTelemetry tracing
+* [ ] Prometheus metrics
+* [ ] Distributed inference batching
+* [ ] Multi-model scheduling
+* [ ] AI pipeline execution graphs
+* [ ] Autoscaled worker pools
+
+---
+
+# ⚡ Vision
+
+PulseQueue is evolving toward:
+
+# Cloud-native Distributed AI Execution Infrastructure
+
+Focused on:
+
+* distributed inference
+* specialized execution runtimes
+* AI worker orchestration
+* realtime observability
+* scalable local AI infrastructure
