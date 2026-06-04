@@ -1,0 +1,20 @@
+FROM node:22
+
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+COPY services/worker/package*.json ./services/worker/
+COPY packages/redis-client/package*.json ./packages/redis-client/
+COPY packages/ai-core/package*.json ./packages/ai-core/
+
+RUN cd services/worker && npm ci --omit=dev \
+    && cd ../../packages/redis-client && npm ci --omit=dev \
+    && cd ../ai-core && npm ci --omit=dev
+
+COPY services/worker ./services/worker
+COPY packages ./packages
+
+WORKDIR /app/services/worker
+
+CMD ["node", "src/index.js"]

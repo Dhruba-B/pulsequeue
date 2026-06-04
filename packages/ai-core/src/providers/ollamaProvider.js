@@ -1,4 +1,7 @@
-import ollama from "ollama";
+import { Ollama } from "ollama";
+
+const ollamaHost = process.env.OLLAMA_HOST || "http://ollama:11434";
+const ollama = new Ollama({ host: ollamaHost });
 
 export const summarizeText = async ({
     text,
@@ -7,7 +10,6 @@ export const summarizeText = async ({
 }) => {
     const response = await ollama.chat({
         model,
-
         messages: [
             {
                 role: "system",
@@ -112,4 +114,3 @@ export const classifyText = async ({
         };
     }
 };
-

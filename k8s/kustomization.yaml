@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - ollama.yaml
+  - redis.yaml
+  - api.yaml
+  - worker.yaml
+  - worker-hpa.yaml
+  - scheduler.yaml
+  - dashboard.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: pulsequeue
+    includeSelectors: false
+
+images:
+  - name: pulsequeue-api
+    newName: pulsequeue-api
+    newTag: local
+  - name: pulsequeue-worker
+    newName: pulsequeue-worker
+    newTag: local
+  - name: pulsequeue-scheduler
+    newName: pulsequeue-scheduler
+    newTag: local
+  - name: pulsequeue-dashboard
+    newName: pulsequeue-dashboard
+    newTag: local

@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: pulsequeue
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: worker
+      app.kubernetes.io/part-of: pulsequeue
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: worker
+        app.kubernetes.io/part-of: pulsequeue
+    spec:
+      terminationGracePeriodSeconds: 45
+      containers:
+        - name: worker
+          image: pulsequeue-worker:local
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: pulsequeue-config
+          env:
+            - name: PULSEQUEUE_WORKER_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: WORKER_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  name: pulsequeue-config
+                  key: WORKER_TYPE
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: pulsequeue-secrets
+                  key: OPENAI_API_KEY
+                  optional: true
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "kill -0 1"
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "kill -0 1"
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi

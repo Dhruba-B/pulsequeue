@@ -1,0 +1,25 @@
+FROM node:22
+
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+COPY services/api-server/package*.json ./services/api-server/
+COPY services/worker/package*.json ./services/worker/
+COPY packages/redis-client/package*.json ./packages/redis-client/
+COPY packages/ai-core/package*.json ./packages/ai-core/
+
+RUN cd services/api-server && npm ci --omit=dev \
+    && cd ../worker && npm ci --omit=dev \
+    && cd ../../packages/redis-client && npm ci --omit=dev \
+    && cd ../ai-core && npm ci --omit=dev
+
+COPY services/api-server ./services/api-server
+COPY services/worker ./services/worker
+COPY packages ./packages
+
+WORKDIR /app/services/api-server
+
+EXPOSE 5000
+
+CMD ["node", "src/index.js"]

@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
 
   redis:
@@ -9,7 +7,13 @@ services:
       - "6379:6379"
 
   api-server:
-    build: ./services/api-server
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+
+    environment:
+      REDIS_URL: redis://redis:6379
+      OLLAMA_HOST: http://host.docker.internal:11434
 
     ports:
       - "5000:5000"
@@ -18,23 +22,40 @@ services:
       - redis
 
   worker:
-    build: ./services/worker
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+
+    environment:
+      REDIS_URL: redis://redis:6379
+      OLLAMA_HOST: http://host.docker.internal:11434
+      WORKER_TYPE: GENERAL
 
     depends_on:
       - redis
       - api-server
 
   scheduler:
-    build: ./services/scheduler
+    build:
+      context: .
+      dockerfile: Dockerfile.scheduler
+
+    environment:
+      REDIS_URL: redis://redis:6379
 
     depends_on:
       - redis
 
   dashboard:
-    build: ./services/dashboard
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+      args:
+        VITE_API_URL: http://localhost:5000
+        VITE_SOCKET_URL: http://localhost:5000
 
     ports:
-      - "4173:4173"
+      - "4173:80"
 
     depends_on:
       - api-server

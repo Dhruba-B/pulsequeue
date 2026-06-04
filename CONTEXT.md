@@ -63,14 +63,82 @@ pulsequeue/
 │   └── dashboard/
 │
 ├── packages/
-│   ├── shared/
-│   └── redis-client/
+│   ├── ai-core/
+│   ├── queue-core/
+│   ├── redis-client/
+│   └── shared/
 
 JavaScript ONLY.
 NO TypeScript.
 
 All packages use:
 "type": "module"
+
+---
+
+# Docker And Kubernetes Context
+
+## Docker Compose
+
+`docker-compose.yml` is the local full-stack container entry point.
+
+It runs:
+
+* `redis` from `redis:7-alpine`, exposed on `localhost:6379`
+* `api-server`, built from root `Dockerfile.api`, exposed on `localhost:5000`
+* `worker`, built from root `Dockerfile.worker`
+* `scheduler`, built from root `Dockerfile.scheduler`
+* `dashboard`, built from root `Dockerfile.dashboard`, exposed on `localhost:4173`
+
+The root Dockerfiles are the correct Docker build path because services import shared monorepo code from `packages/`.
+
+Important Compose environment:
+
+* `REDIS_URL=redis://redis:6379`
+* `WORKER_TYPE=GENERAL`
+* `OLLAMA_HOST=http://host.docker.internal:11434`
+* dashboard build args:
+  * `VITE_API_URL=http://localhost:5000`
+  * `VITE_SOCKET_URL=http://localhost:5000`
+
+Scale local workers with:
+
+```bash
+docker compose up --build --scale worker=5
+```
+
+## Kubernetes
+
+Kubernetes manifests live in `k8s/` and are applied through Kustomize:
+
+```bash
+kubectl apply -k k8s
+```
+
+The cluster namespace is `pulsequeue`.
+
+Kubernetes deploys:
+
+* Redis Deployment, ClusterIP Service, and `redis-data` PVC
+* Ollama Deployment, ClusterIP Service, and `ollama-data` PVC
+* API Server Deployment and ClusterIP Service on port `5000`
+* Worker Deployment with 3 default replicas
+* Worker HorizontalPodAutoscaler from 1 to 10 replicas at 70% CPU
+* Scheduler Deployment
+* Dashboard Deployment and ClusterIP Service on port `80`
+
+Shared non-secret configuration is in `k8s/configmap.yaml`.
+
+Sensitive values belong in a real `pulsequeue-secrets` Secret. `k8s/secret.template.yaml` is a template and is intentionally not included in `k8s/kustomization.yaml`.
+
+Local access uses port-forwarding:
+
+```bash
+kubectl port-forward -n pulsequeue svc/dashboard 4173:80
+kubectl port-forward -n pulsequeue svc/api-server 5000:5000
+```
+
+Detailed Kubernetes instructions are in `docs/kubernetes.md`.
 
 ---
 
